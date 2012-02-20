@@ -7,8 +7,9 @@ Gem::Specification.new do |s|
 		This gem supports rapid development of 2D tile and turn based games for offline
 		and online usage.
 EOF
+  s.executables << 'tiles'
   s.authors     = ["Rejuxst"]
   s.email       = "wer123hitech@gmail.com"
-  s.files       = ["lib/hola.rb"]
-  s.homepage    = 'Not Yet'
+  s.files       = Dir['lib/**/*.rb']
+  s.homepage    = 'https://github.com/rejuxst/tiles'
 end
