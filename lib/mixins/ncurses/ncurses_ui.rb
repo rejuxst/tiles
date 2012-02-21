@@ -1,4 +1,7 @@
-require 'ncurses'
+require 'ffi-ncurses/ncurses'
+require 'UI'
+# export RUBY_FFI_NCURSES_LIB=/lib/libncursesw.so.5.9
+# ^ Run the above line if the FFI::Ncurses library isn't linking
 module Ncurses
 	class UI < UI
 		def initialize
