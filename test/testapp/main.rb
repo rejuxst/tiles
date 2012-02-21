@@ -1,12 +1,18 @@
 
 def run
-	require "app/maps/dungeon"
-	require "app/games/crawl"
-	require "app/tiles/ground"
-	require "app/tiles/water"
-	require "app/tiles/wall"
-	require "app/actions/move"
-	require "lib/ncurses/ncurses_ui"
+	filedir = File.dirname(File.join(Dir.pwd(),__FILE__))
+	gem_original_require File.join(filedir,"app/maps/dungeon") #"app/maps/dungeon"
+	gem_original_require File.join(filedir,"app/games/crawl")
+	gem_original_require File.join(filedir,"app/tiles/ground")
+	gem_original_require File.join(filedir,"app/tiles/water")
+	gem_original_require File.join(filedir,"app/tiles/wall")
+	gem_original_require File.join(filedir,"app/actions/move")
+	#require "app/games/crawl"
+	#require "app/tiles/ground"
+	#require "app/tiles/water"
+	#require "app/tiles/wall"
+	#require "app/actions/move"
+	require "mixins/ncurses/ncurses_ui"
 	$thisgame = Crawl.new
 	$thisgame.players << Player.new(:ui => Ncurses::UI.new)
 	$thisgame.map.tile(10,10) << Actor.new(:ASCII => '@', :controller => $thisgame.players[0])
@@ -17,22 +23,33 @@ def run
 	$thisgame.start
 	$thisgame.run
 	$thisgame.stop
+ensure
+	Ncurses.endwin
 end
 
 def require_loop
-	@oldobj = Object.constants().sort
-	Dir.chdir(File.join("lib","core"))
-	core = Dir.new(".")
-	core.each do |f|
-		unless File.directory?(File.join(f)) || !(f.match(/\.gitignore/).nil?)
-			succ = require File.join(f.partition('.')[0])
-			#puts "Requiring lib file: #{File.join(f.partition('.')[0])} => #{succ}"
-		end
-	end
-	# Object.constants().sort.each do |const|
-		 # puts const unless const.is_a?(Array)||!@oldobj.index(const).nil?
-	# end
-	Dir.chdir(File.join("..",".."))
+#	@oldobj = Object.constants().sort
+#	Dir.chdir(File.join("lib","core"))
+#	core = Dir.new(".")
+#	core.each do |f|
+#		unless File.directory?(File.join(f)) || !(f.match(/\.gitignore/).nil?)
+#			succ = require File.join(f.partition('.')[0])
+#			#puts "Requiring lib file: #{File.join(f.partition('.')[0])} => #{succ}"
+#		end
+#	end
+#	# Object.constants().sort.each do |const|
+#		 # puts const unless const.is_a?(Array)||!@oldobj.index(const).nil?
+#	# end
+#	Dir.chdir(File.join("..",".."))
+	require "game"
+	require "map"
+	require "tile"
+	require "action"
+	require "actor"
+	require "game"
+	require "nonactor"
+	require "generic"
+	require "player"
 end
 def require_from_source
 	Dir.chdir(File.join("..","source","gem","lib"))
@@ -78,9 +95,9 @@ Dir.chdir("testspace")
 end
 
 begin
-	require_from_source
+	#require_from_source
 	#load_mixin("ncurses")
-	#require_loop
+	require_loop
 	run
 end
 
