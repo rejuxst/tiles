@@ -24,9 +24,10 @@ class Game
 	end
 	def run
 		while 1
-			@players.each{|p| p.take_turn if p.turn == turn} # players take their turn
+			# players take their turn
+			@players.each{|p| p.take_turn if p.turn == turn}
 			process_events
-			actors_take_turns			  					# all uncontrolled actors take their turn
+			actors_take_turns	# all uncontrolled actors take their turn
 			@turn += 1
 		end
 	end
@@ -36,27 +37,28 @@ class Game
 	def actors_take_turns
 		
 		# find actors on current turn
-		turnproc = Proc.new() do |t,&y|			  # Recursive actor check
-			if t.class <= Actor && t.turn == turn # Check current
+		turnproc = Proc.new() do |t,&y|			# Recursive actor check
+			if t.class <= Actor && t.turn == turn	# Check current
 				t.take_turn if t.controller.nil?
 			end
-			if !t.things.nil? 				  # Recursion to items things
+			if !t.things.nil? 			# Recursion to items things
 				t.things.each {|q| y.call(q,&y)}
 			end
 		end
-		mapproc = Proc.new() do |t,&y|			  # Recursive actor check
+		mapproc = Proc.new() do |t,&y|			# Recursive actor check
 			if t.turn == turn # check current
 				t.take_turn
 			end
-			if !t.maps.nil?					 	  # Recursion to submaps
+			if !t.maps.nil?					  # Recursion to submaps
 				t.maps.each {|q| y.call(q,&y)}
 			end
 			t.things { |t| turnproc.call(t,&turnproc) }	# check the things
 			# check the tiles (:tiles => tiles[:column] => tile.things)
-			t.tiles.each {|t| t.each { |t2| t2.things.each { |t3| turnproc.call(t,&turnproc)}}} 
+			t.tiles.each { |ti| ti.each { |t2| t2.things.each { |t3| turnproc.call(t3,&turnproc)}}}
 		end
-		@things.each { |t| turnproc.call(t,&turnproc) } 	# Find all the things in the main map
-		mapproc.call(map,&mapproc)							# Find all the actors in all the maps
+		@things.each { |b| print(b)}
+		@things.each { |t| turnproc.call(t,&turnproc) }# Find all the things in the main map
+		mapproc.call(map,&mapproc)			# Find all the actors in all the maps
 	end
 	def stop
 		@views.each {|v| v.close}
