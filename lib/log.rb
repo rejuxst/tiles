@@ -1,3 +1,6 @@
+module Stream
+
+end
 class Log
 # Logs are record keepers that act like active streams.
 # As an active stream characters can be streamed into 
