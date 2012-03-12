@@ -8,10 +8,14 @@ class Dictionary
 # Dictionary creation API is integrated into Generic (EDIT: Is this for sure?)
 	def initialize
 		@ent = Array.new	# list of entries
-		@entdef = Array.new	# def coreesponding to the entry
+		@entdef = Array.new	# def coresponding to the entry
 		@def2ent = Hash.new	# Allows translation from def => entires
 		@fi = [0]		# The list of free indicies
 		@ao = []		# order of items added
+		@iter = nil		# default iterator
+	end
+	def clear
+		initialize
 	end
 	def add_entry(item,*args)
 		i = @fi.pop	# pick an open slot
@@ -20,8 +24,8 @@ class Dictionary
 		# populate the definition entries
 		args = [] if args.nil?
 		args.each do |a|
-			unless a.is_a String or a.is_a Symbol
-			throw "Attempted to add a definition to a #{self.class} that is not a String or Hash"
+			unless a.kind_of? String or a.kind_of? Symbol
+				raise "Attempted to add a definition to a #{self.class} that is not a String or Hash"
 			end
 		end
 		@entdef[i] = args
@@ -31,7 +35,14 @@ class Dictionary
 		end
 		@fi << @ent.length() if @fi.empty?
 	end
-	def add_entries(items,defs)
+	def <<(input)
+		if input.kind_of? Array
+			add_entries input
+		else
+			add_entry input
+		end
+	end
+	def add_entries(items,defs = [])
 		# Assumes an Array of items and a corresponding list of defs item[i] goes with def[i]
 		items.each do |it|
 			if defs[i].nil?
@@ -41,6 +52,9 @@ class Dictionary
 			end
 		end
 
+	end
+	def list
+		return @ent.compact
 	end
 	def delete_at(index)
 		@ent[index] = nil
@@ -53,7 +67,116 @@ class Dictionary
 			delete_at(i) if @ent[i].equal?(obj) and !@ent[i].nil?
 		end
 	end
-end
-module Iterator
-# the Iterator class is the ordered access interface for a dictionary
+	def each(iter = nil,&blk)
+		@ao.each{|i| yield(@ent[i])} if iter.nil?
+		iter.each{|i| yield(i)} unless iter.nil?
+		return self
+	end
+	def each_index(iter = nil,&blk)
+		@ao.each{|i| yield(i)} if iter.nil?
+		iter.each_index{|i| yield(i)} unless iter.nil?
+		return self
+	end
+	def each_pair(iter = nil,&blk) # returned the definition list for an entry
+		each_index do|i|
+			yield @ent[i],@entdef[i]
+		end if iter.nil?
+		iter.each_index do|i|
+			yield @ent[i],@entdef[i]
+		end unless iter.nil?
+		return self
+	end
+	def each_key(&blk) # returned the definition list for an entry
+		@def2ent.each_key {|i| yeild(i)}
+		return self
+	end
+	def add_order
+		return @ao
+	end
+	def to_ary
+		return @ent.compact
+	end
+	def &(dict)
+		return list & dict.list
+	end
+	def |(dict)
+		return list | dict.list
+	end
+	def concat(dict)
+		dict.each_pair{|e,d| add_entry(e,d)}
+	end
+	def has_key?(input)
+		return not(@def2ent[input].nil? && @def2ent[input].empty?)
+	end
+	def to_s
+		out = "\#{Dictionary:"
+		each_pair do |e,d|
+			out << "#{e.class} => [#{d.join(",")}] "
+		end
+		return out << "}"
+	end
+	def inspect
+		return "#{self.class}"
+	end
+	def [](f,l = nil)
+		out = []
+		case f
+			when Fixnum then
+				@ao[(f)..(l)].each{|i| out.push(at(i))} unless l.nil?
+			when Range then
+				@ao[f].each{|i| out.push(at(i))}
+			when Symbol then
+				return value(f)
+			when String then
+				return value(f)
+			when Array then
+				f.each{|i| out.push(at(i))}
+			else 
+				return at(f.to_i)
+		end
+		return out
+	end
+	def at(i)
+		return nil if @ao[f].nil?
+		return @ent[@ao[f]]
+	rescue
+		raise "Incorrect Indexing of #{self.class} indexed with #{i.class}"
+	end
+	def value(k)
+		return nil unless not(@def2ent[k].nil? and @def2ent[k].empty?)
+		return self.[](@def2ent[k])
+	rescue
+		raise "Incorrect Hash Access of #{self.class} indexed with #{k.class}"
+	end
+	class Iterator
+	# the Iterator class is the ordered access interface for a dictionary
+	# various access models 
+		def initialize(dict)
+			raise "Incorrect input class for #{self.class}" unless dict.kind_of? Dictionary
+			@dict = dict
+			@list = dict.add_order
+			@ptr = -1
+			@mode = :ll
+		end
+		def fwd
+			if @list.length() < (@ptr-1)
+				@ptr += 1
+				return @dict[@list[@ptr]]
+			else 
+				return End
+			end
+		end
+		def fwd_i
+			if @list.length() < (@ptr-1)
+				@ptr += 1
+				return @list[@ptr]
+			else 
+				return End
+			end
+		end
+		class Start
+		end
+		class End
+		end
+	end
 end
