@@ -6,6 +6,8 @@ class Dictionary
 # API for file access.
 
 # Dictionary creation API is integrated into Generic (EDIT: Is this for sure?)
+	attr_reader :iter
+	attr_writer :iter
 	def initialize
 		@ent = Array.new	# list of entries
 		@entdef = Array.new	# def coresponding to the entry
@@ -13,6 +15,9 @@ class Dictionary
 		@fi = [0]		# The list of free indicies
 		@ao = []		# order of items added
 		@iter = nil		# default iterator
+		#@hookin = []		# add hook
+		#@hookout = []		# delete hook
+		return self
 	end
 	def clear
 		initialize
@@ -34,6 +39,8 @@ class Dictionary
 			@def2ent[d].push i
 		end
 		@fi << @ent.length() if @fi.empty?
+		iter.update! unless iter.nil?
+		return item
 	end
 	def <<(input)
 		if input.kind_of? Array
@@ -51,16 +58,18 @@ class Dictionary
 				eval("self.add_entry(it,#{defs[i].join(",")})")
 			end
 		end
-
 	end
 	def list
 		return @ent.compact
 	end
 	def delete_at(index)
+		out = @ent[index]
 		@ent[index] = nil
 		@entdef[index].each {|d| @def2ent[d].delete(index); @def2ent.delete(d) if @def2ent[d].empty?}
 		@fi.push index
 		@ao.delete index
+		iter.update! unless iter.nil?
+		return out
 	end
 	def delete(obj)	# deletes all references to an object
 		@ent.each_index do |i|
@@ -122,8 +131,10 @@ class Dictionary
 		out = []
 		case f
 			when Fixnum then
-				@ao[(f)..(l)].each{|i| out.push(at(i))} unless l.nil?
+				return at(f) if l.nil?
+				return self[((f)..(l))]
 			when Range then
+				return nil if @ao[f].nil?
 				@ao[f].each{|i| out.push(at(i))}
 			when Symbol then
 				return value(f)
@@ -136,14 +147,18 @@ class Dictionary
 		end
 		return out
 	end
+	def []=(*args)
+		raise "Dictionary Entries cannot be set. Use the add_entry or delete_entry function"
+	end
 	def at(i)
-		return nil if @ao[f].nil?
-		return @ent[@ao[f]]
+		return nil if @ao[i].nil?
+		return @ent[@ao[i]]
 	rescue
 		raise "Incorrect Indexing of #{self.class} indexed with #{i.class}"
 	end
-	def value(k)
-		return nil unless not(@def2ent[k].nil? and @def2ent[k].empty?)
+	def values(k)
+		return nil if @def2ent[k].nil?
+		return nil if @def2ent[k].empty?
 		return self.[](@def2ent[k])
 	rescue
 		raise "Incorrect Hash Access of #{self.class} indexed with #{k.class}"
@@ -154,25 +169,43 @@ class Dictionary
 		def initialize(dict)
 			raise "Incorrect input class for #{self.class}" unless dict.kind_of? Dictionary
 			@dict = dict
-			@list = dict.add_order
+			@list = [0..(dict.add_order.length()-1)].to_ary
 			@ptr = -1
 			@mode = :ll
+			return self
 		end
 		def fwd
-			if @list.length() < (@ptr-1)
-				@ptr += 1
-				return @dict[@list[@ptr]]
-			else 
-				return End
-			end
+			return End if @list.length() == (@ptr-1)
+			@ptr += 1
+			return @dict[@list[@ptr]]
 		end
-		def fwd_i
-			if @list.length() < (@ptr-1)
-				@ptr += 1
-				return @list[@ptr]
-			else 
-				return End
-			end
+		def fwdi
+			return End if @list.length() == (@ptr-1)
+			@ptr += 1
+			return @list[@ptr]
+		end
+		def finish?
+			return true if @ptr == (@list.length()-1)
+			return false
+		end
+		def rev
+			return Start if @ptr == 0
+			@ptr -= 1
+			return @dict[@list[@ptr]]
+		end
+		def revi
+			return Start if @ptr == 0
+			@ptr -= 1
+			return @list[@ptr]
+		end
+		def start?
+			return true if @ptr == -1 or @ptr == 0
+			return false
+		end
+		def update!
+			@list = @dict.add_order
+			@ptr = -1
+			return self
 		end
 		class Start
 		end
