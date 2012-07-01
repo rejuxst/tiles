@@ -1,80 +1,125 @@
+require 'rexml/element'
 module Database
+#############################################################################################################
 # Databases record overall game information including table information
 # The main game database includes definitions on how to structure db elements
-# Custom db Format: <ID|IID:Data>
-# - < opens an entry
-# - > closes an entry
-# - | seperates Definition ID and Instance ID
-# - : seperates Instance ID and Data
-# - & braces a Definition
-# - & braces an Instance
-# - # braces a Numerical 	datatype
-# - " braces a String		datatype
-# - $ braces a Symbol		datatype
-# - ~ braces a BLOB 		datatype
-# - * braces a NESTED 		datatype
-#	Definition:
-#	<&ID:N"Data"N^"SuperClass"^!PID:Data!MIDMM"Data"MR"Action"|$via$,$all:M"data"MR&>
-#		- N braces a class Name
-#		- ! braces a property	Note: Property Data in a definition corresponds to the default value upon creation
-#		- ^ braces a Superclass name
-#		- M braces a method
-#		- R braces a respond_to block which is of the format "Action"|access_type:method
-#			- if method is of datatype string it is the name of the method to call
-#			- if method is a MM method block the contained block will be packaged into
-#			- if method is a symbol it is saved to the respond_to tree as is
-#	Instance:
-#	<@ID|IID:^owner^!PID:#Data#!!PID:"Data"!@>
-#		- ! braces a property
-#		- ^ braces an owner IID
-attr_accessor :stream,:records,:proc_stream
-
-def self.read_db(filename)
-    db = Database.new()
-    return db.read_db(filename)
-end
-def read_db(filename)
-    stream = File.open(filename,"r");
-    process_stream(stream);
-end
-def process_stream(stream)
-    c = stream.readchar
-    return self if c == nil
-    records << Record.process_stream(stream) if(c == "<" and proc_stream != "\\")
-    proc_stream = c
-    return process_stream(stream);
-end
-
-
-
-
-# Actual Database Access primitives
-module Record
-   attr_accessor :elements,:rid,:rtype,:instance
-   attr_accessor :context
-   def db_dump
-
-   end
-   def update
-
-   end
-   def self.process_stream(stream)
-      r = Record.new()
-      r.context = :new
-      return r.process_stream(stream)
-   end
-   def process_stream(stream)
-    c = stream.readchar
-    return self if c == nil
-
-    proc_stream = c
-    return process_stream(stream);
-   end
-end
-module RElement
-  attr_accessor :data,:type
-  def initialize
-
+# 
+# Instances can have subinstances and data:
+# -- Data has a unique identifier understood by the Object Class. This Identifier should be a string
+# -- but it can be anything. This ID is NOT a GUID it is only used be the loading processor to process
+# -- the data.
+#	XML Instance Format:
+#<instance ID=#### GUID=#### DBID=####>
+#	<!-- All element IID are referenced via their hosts IID so for a db item its => instance.db.item
+#	<!-- Class type is not used by the parser will only exist in pretty-print mode -->
+#	<instance GUID=####  SID=#### type=local class=Classtype>
+#		<!-- ID on data is source information that helps the host instance -->
+#		<!-- Identify its use
+#		<data GUID=#### type=Integer	ID=####	>12030123</data>
+#		<data GUID=#### type=String	ID=####	>Data</data>
+#		<data GUID=#### type=BLOB	ID=####	>(@@*bj8#*$234</data>
+#		<!-- References are either Global or Locals -->
+#		<!-- Local References are indexed from the db of the element ID 0 points to the dbs host -->
+#		<data GUID=#### type=GlobalReference	>123.123.123.45		</data>
+#		<data ID=####   type=LocalReference	>000.000.123.123.123.45</data>
+#		<!-- The above two are equivalent locations -->
+#	</instance>
+#<instance>
+#####################################
+# GUID Format:
+# GUID are global identifies that allow referencing objects on a global basis. The format is:
+# @g or @l  >>>> Each GUID regardless of scope should *ALWAYS* be prepended with either of these.
+#	    >>>> @g: The GUID is references at a global scope. When recusively parsing this GUID
+#	    >>>>>>>> always convert the @g to @l once outside the highest level db in a db structure
+# >##>##    >>>> Each GUID is a hierarchical reference and each :## is the current db levels entry index
+#	    >>>> thus this example value is two levels deep from the reference's db context
+#	    >>>> This format is designed to be consumed at :## for easy eval(":##") to convert to
+#	    >>>> Symbols used by the databases indexing process
+#TODO: Create a guid class to allow encapsulated guid management	     
+# Ex)
+#  @g>####>####>####
+#  @l>####>####>####
+#  @g>14512>123923>15012333 >>>>> This is a global pointer to an instance 3 levels below the global database
+#
+####################################
+#############################################################################################################
+module GUID ## Not in use currently
+  def is_local?(input)
+  end
+  def is_global?(input)
+	return !self.is_local?(input)
+  end
+  def top_id(input,as = Symbol)
+	output = ''
   end
 end
+# Actual Database Access primitives
+  attr_reader :db_parent
+  attr_reader :guid,:sid
+  attr_reader :data,:instances
+  def self.read_db(filename)
+	db = XmlSimple.xml_in(filename)
+  end
+  def write_db(filename)
+	string = XmlSimple.xml_out(db)
+  end
+
+###################################################################
+# Instance db control functions
+  def find_instance(input,as = :guid)
+  # Look up a instance in this database using guid
+  #TODO: Extend this function to account for diffrent types of instance lookups
+  #TODO: Extend this to support function aliasing to database instances
+  #TODO: Prevent this function from returning guids that point to non-instances (e.g data)
+	return guid_lookup(input);	
+  end
+###################################################################
+# General DB lookup functions
+  def guid_lookup(input_guid)
+  # Uses the input guid to search for an object. This follows standard GUID format
+  #
+	if(input_guid.class == Symbol) # Assume that GUID is for this level only
+		db_lookup(input_guid); 
+	elsif(input_guid.class == String)
+		# GUID consume
+	else
+raise <<EOF
+Record::guid_lookup failed when #{input_guid} was passed to Record::guid_lookup.
+Expected class to be Symbol or String and got #{input_guid.class} instead.
+EOF
+  	end
+  end
+  def db_lookup(db_index)
+	return instances[db_index.to_sym];
+  rescue 
+	raise "Unable to translate db_lookup from input db_index => #{db_index} "
+  end 
+###################################################################
+#TODO: Make these Record/DB private functions
+###### Maybe make them non-private for private-distros?
+  def set_guid(input_guid)
+  # set_guid(guid): Sets the GUID of this object. (This should only be called by the database adding this object)
+	return @guid=input_guid
+  end
+  def set_sid(sid)
+	return @sid=sid
+  end
+################################################################### 
+  def db_dump
+  # db_dump:
+  # Returns the dump of this instances context as a REXML::Element
+  # Recursivly adds the sub data and instances in the context
+	this_db = REXML::Element.new 'instance'
+	this_db.add_attribute('GUID',@guid);
+	this_db.add_attribute('SID',@sid);
+	this_db.add_attribute('type','local');
+	this_db.add_attribute('class',"#{self.class}");
+	for_each_data do |d|
+		this_db.add_element= Database.convert_to_data(d) if Database.is_data?(d)
+	end
+	for_each_instance do |i|
+		this_db.add_element= i.db_dump if i.db_dump?()
+	end	
+	return this_db;
+  end
 end
