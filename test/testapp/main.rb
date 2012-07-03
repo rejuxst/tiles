@@ -17,7 +17,9 @@ def run
 	$thisgame.players << Player.new(:ui => Ncurses::UI.new)
 	$thisgame.map.tile(10,10) << Actor.new(:ASCII => '@', :controller => $thisgame.players[0])
 	# print("#{$thisgame.map.tile(10,9).things.length},#{$thisgame.map.tile(10,9).things[0].class}\n")
-	$thisgame.map.tile(1,1)  << Thing.new(:ASCII => 'X')
+	tt = Thing.new(:ASCII => 'X');
+	tt.add_to_db Thing.new(:ASCII => '$')
+	$thisgame.map.tile(1,1)  << tt
 	# print "#{$thisgame.map.tile(10,10).things.length},#{$thisgame.map.tile(1,1).things.length}"
 	sleep(2)
 	$thisgame.start
@@ -27,6 +29,8 @@ ensure
 	print "Waiting for input to close\n"
 	Ncurses.stdscr.getch
 	Ncurses.endwin
+	tt.db_dump.write()
+
 end
 
 def require_loop
@@ -60,7 +64,7 @@ def require_from_source
 	core = File.join(File.dirname(__FILE__),"..","..","lib")
 	Dir.open(core) do |ent|
 		ent.entries.each do |f|
-			unless File.directory?(File.join(core,f)) || !(f.match(/\.gitignore/).nil?)
+			unless File.directory?(File.join(core,f)) || !(f.match(/\.gitignore/).nil?) || !(f.match(/\.swp/).nil?)
 				succ = gem_original_require File.expand_path File.join(ent.to_path,f.partition('.')[0])
 				puts "Requiring lib file: #{File.join(f.partition('.')[0])} => #{succ}"
 			end
