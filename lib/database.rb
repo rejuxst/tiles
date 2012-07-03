@@ -1,3 +1,4 @@
+require 'rexml/document'
 require 'rexml/element'
 module Database
 #############################################################################################################
@@ -26,6 +27,8 @@ module Database
 #	</instance>
 #<instance>
 #####################################
+# NOTE Should redesign to be transactional
+#####################################
 # GUID Format:
 # GUID are global identifies that allow referencing objects on a global basis. The format is:
 # @g or @l  >>>> Each GUID regardless of scope should *ALWAYS* be prepended with either of these.
@@ -33,8 +36,8 @@ module Database
 #	    >>>>>>>> always convert the @g to @l once outside the highest level db in a db structure
 # >##>##    >>>> Each GUID is a hierarchical reference and each :## is the current db levels entry index
 #	    >>>> thus this example value is two levels deep from the reference's db context
-#	    >>>> This format is designed to be consumed at :## for easy eval(":##") to convert to
-#	    >>>> Symbols used by the databases indexing process
+#	    >>>> This format is designed to be consumed at >## for easy "##".to_sym to convert to
+#	    >>>> Symbols used by the databases indexing method
 #TODO: Create a guid class to allow encapsulated guid management	     
 # Ex)
 #  @g>####>####>####
@@ -43,6 +46,30 @@ module Database
 #
 ####################################
 #############################################################################################################
+## Database Transactional model
+  def add_to_db(input,as = :instance)
+	case as
+	  when :instance
+		input.init_db(self,assign_guid(input))
+	  when :data
+		# Dunno Yet
+	  else
+		raise "Tried to add_to_db on #{self} with unknown as format => #{as}"
+	end
+  end
+  def remove_from_db(input,as = :instance)
+	case as
+          when :instance
+                remove_guid(input) 
+          when :data
+                # Dunno Yet
+          else
+                raise "Tried to add_to_db on #{self} with unknown as format => #{as}"
+        end
+  end
+#TODO Add inter_db transactors so all db control functions can be privatized
+
+####################################
 module GUID ## Not in use currently
   def is_local?(input)
   end
@@ -57,13 +84,24 @@ end
   attr_reader :db_parent
   attr_reader :guid,:sid
   attr_reader :data,:instances
-  def self.read_db(filename)
-	db = XmlSimple.xml_in(filename)
-  end
-  def write_db(filename)
-	string = XmlSimple.xml_out(db)
-  end
 
+  def self.read_db(xmlstring)
+	
+  end
+  def write_db(file)
+	file << db_dump()
+  end
+  def init_db(parent,guid,sid=nil)
+	set_sid(sid);
+	set_guid(guid);
+	@db_parent=parent;
+	@instances = {}
+	@data = {}
+  end
+  def destroy_record_self()
+  # Destroy the record of one's self in the containing db
+  	return db_parent.remove_guid(self.guid)
+  end
 ###################################################################
 # Instance db control functions
   def find_instance(input,as = :guid)
@@ -75,9 +113,8 @@ end
   end
 ###################################################################
 # General DB lookup functions
-  def guid_lookup(input_guid)
+  def lookup_guid(input_guid)
   # Uses the input guid to search for an object. This follows standard GUID format
-  #
 	if(input_guid.class == Symbol) # Assume that GUID is for this level only
 		db_lookup(input_guid); 
 	elsif(input_guid.class == String)
@@ -95,6 +132,26 @@ EOF
 	raise "Unable to translate db_lookup from input db_index => #{db_index} "
   end 
 ###################################################################
+# Sub GUID management functions
+###TODO: Add methodology for preserving recently used GUIDs 
+######## so references don't react unexpectedly.
+  def assign_guid(input_instance)
+	output = get_guid(input_instance)
+	return output unless output.nil?
+	i = 1;
+	i = i +1 until instances[i.to_s.to_sym].nil?
+	@instances[i.to_s.to_sym]= input_instance;
+	return i.to_s
+  end
+  def remove_guid(input_guid)
+	return false if instances[input_guid.to_s.to_sym]
+	instances[input_guid.to_s.to_sym] = nil;
+	return true; 
+  rescue
+	raise "Input GUID not of the correct format #{input_guid}"
+  end
+###################################################################
+###################################################################
 #TODO: Make these Record/DB private functions
 ###### Maybe make them non-private for private-distros?
   def set_guid(input_guid)
@@ -104,8 +161,20 @@ EOF
   def set_sid(sid)
 	return @sid=sid
   end
+  def get_guid(input_item)
+	return nil;	#TODO Use get_guid to prevent repeated guid assignment
+  end
 ################################################################### 
-  def db_dump
+  def for_each_instance(&blk)
+	@instances.each_value{|v| yield v}
+  end
+  def for_each_data(&blk)
+	@data.each_value{|v| yield v}
+  end
+  def db_dump?()
+	return true;
+  end
+  def db_dump()
   # db_dump:
   # Returns the dump of this instances context as a REXML::Element
   # Recursivly adds the sub data and instances in the context
@@ -115,10 +184,10 @@ EOF
 	this_db.add_attribute('type','local');
 	this_db.add_attribute('class',"#{self.class}");
 	for_each_data do |d|
-		this_db.add_element= Database.convert_to_data(d) if Database.is_data?(d)
+		this_db.add_element(Database.convert_to_data(d)) if Database.is_data?(d)
 	end
 	for_each_instance do |i|
-		this_db.add_element= i.db_dump if i.db_dump?()
+		this_db.add_element(i.db_dump) if i.db_dump?()
 	end	
 	return this_db;
   end

@@ -28,7 +28,7 @@ class Log
 		output = ''
 		@line.reverse.each_char do |c|
 			output << c
-			break if c = "\n" and !output.empty?
+			break if c == "\n" and !output.empty?
 		end
 	end
 	def add_listener(obj,method)
