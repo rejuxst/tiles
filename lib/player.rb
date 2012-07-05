@@ -21,14 +21,14 @@ class Player
 		@turn +=1
 	end
 	def process_event event
-			x = 0
-			y = 0
-			i = true
-			i=Move.down(@controls[0])  if event == 119
-			i=Move.left(@controls[0])	 if event == 100 
-			i=Move.right(@controls[0]) if event == 97
-			i=Move.up(@controls[0])  	 if event == 115
-			process_event(@ui.getevent) if i.nil?
+#			x = 0
+#			y = 0
+#			i = true
+#			i=Move.down(@controls[0])  if event == 119
+#			i=Move.left(@controls[0])	 if event == 100 
+#			i=Move.right(@controls[0]) if event == 97
+#			i=Move.up(@controls[0])  	 if event == 115
+#			process_event(@ui.getevent) if i.nil?
 			#@controls[0].owner.offset(y,x) << @controls[0]
 	end
 	def take_control item

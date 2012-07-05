@@ -23,7 +23,7 @@ module Ncurses
 					if	$thisgame.map.tile(x,y).things.length == 0
 						Ncurses.mvaddstr(x, y, "#{($thisgame.map.tile(x,y)).ASCII}") 
 					else
-						actors = $thisgame.map.tile(x,y).things.find {|t| t.class <= Actor}#$thisgame.map.tile(x,y).things.find
+						actors = $thisgame.map.tile(x,y).things.find {|t| t.class <= Actor}
 						c = $thisgame.map.tile(x,y).things[0]
 						c = actors if !actors.nil? 
 						Ncurses.mvaddstr(x, y, "#{c.ASCII}") 
@@ -40,5 +40,4 @@ module Ncurses
 		end
 
 	end
-
 end

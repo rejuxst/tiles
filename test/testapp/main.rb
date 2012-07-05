@@ -7,15 +7,17 @@ def run
 	gem_original_require File.join(filedir,"app/tiles/water")
 	gem_original_require File.join(filedir,"app/tiles/wall")
 	gem_original_require File.join(filedir,"app/actions/move")
+	gem_original_require File.join(filedir,"app/players/human")
 	#require "app/games/crawl"
 	#require "app/tiles/ground"
 	#require "app/tiles/water"
 	#require "app/tiles/wall"
 	#require "app/actions/move"
-	require "mixins/ncurses/ncurses_ui"
+
 	$thisgame = Crawl.new
-	$thisgame.players << Player.new(:ui => Ncurses::UI.new)
+	$thisgame.players << SuperHuman_DEBUG.new() #:ui => Ncurses::UI.new
 	$thisgame.map.tile(10,10) << Actor.new(:ASCII => '@', :controller => $thisgame.players[0])
+
 	# print("#{$thisgame.map.tile(10,9).things.length},#{$thisgame.map.tile(10,9).things[0].class}\n")
 	tt = Thing.new(:ASCII => 'X');
 	tt.add_to_db Thing.new(:ASCII => '$')
@@ -29,7 +31,8 @@ ensure
 	print "Waiting for input to close\n"
 	Ncurses.stdscr.getch
 	Ncurses.endwin
-	tt.db_dump.write()
+	puts $thisgame.players
+#	tt.db_dump.write()
 
 end
 
@@ -47,6 +50,7 @@ def require_loop
 #		 # puts const unless const.is_a?(Array)||!@oldobj.index(const).nil?
 #	# end
 #	Dir.chdir(File.join("..",".."))
+	
 	require "game"
 	require "map"
 	require "tile"
@@ -58,6 +62,7 @@ def require_loop
 	require "player"
 	require "thing"
 	require "property"
+	require "mixins/ncurses/ncurses_ui"
 end
 def require_from_source
 	#Dir.chdir(File.join("..","..","lib"))
