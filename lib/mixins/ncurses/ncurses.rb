@@ -20,6 +20,8 @@
 
 require_relative "ncurses.so"
 
+	puts "Got Here!"
+
 
 # Ncurses constants with leading underscore
 def Ncurses._XOPEN_CURSES
