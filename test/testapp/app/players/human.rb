@@ -9,10 +9,10 @@ class Human < Player
 	def process_event(event)
 			# There are lots of cool ways to do this in ruby
 			while 1 # Loop until valid input
-                        i=Move.down(@controls[0])   if event == 119
-                        i=Move.left(@controls[0])   if event == 100
-                        i=Move.right(@controls[0])  if event == 97
-                        i=Move.up(@controls[0])     if event == 115
+			i=Move.down(@controls[0])   if event == 'w'
+                        i=Move.left(@controls[0])   if event == 'd'
+                        i=Move.right(@controls[0])  if event == 'a'
+                        i=Move.up(@controls[0])     if event == 's'
 			return i 		    unless i.nil?
 			event = @ui.getevent 	    if i.nil?
 			end
@@ -26,7 +26,7 @@ class SuperHuman_DEBUG < Human
 	end
 	def process_event(event)
 		if !@useshell 
-			return super(event) unless event == "p".ord	# Act as a normal Human
+			return super(event) unless event == 'p'	# Act as a normal Human
 			@useshell = true;
 		end
 		while(1)
@@ -55,15 +55,17 @@ class INTERACTIVEUI < ::Ncurses::UI
 		rowtop = $thisgame.map.rows + 3
 		r = stream.length;
 		stream.each do |l|
-			Ncurses.mvaddstr(rowtop+r,0,l)
+			Ncurses.setpos(rowtop+r,0)
+			Ncurses.addstr(l)
 			r = r-1
 		end
-		Ncurses.mvaddstr(rowtop+stream.length+1,0,">>#{iline}")
+		Ncurses.setpos(rowtop+stream.length+1,0)
+ 		Ncurses.addstr(">>#{iline}")
+		#Ncurses.mvaddstr(rowtop+stream.length+1,0,">>#{iline}")
 	end
 	def sendchar(input)
 		return process_shell if input == "\n".ord or input == "\r".ord or input == 10
 		iline << input.chr;
-		puts "Got Here! #{input}=?#{"\r".ord} | #{iline}"
 		return true;
 	end
 	def process_shell
@@ -74,7 +76,8 @@ class INTERACTIVEUI < ::Ncurses::UI
 		end
 		return true if iline.empty?
 		stream << ">>#{iline}"
-		n = "#{@__ccontext.eval(iline)}" rescue n = "Line Failure"
+		n = "#{eval(iline)}" rescue binding.pry
+		#n = "Line Failure"
 		stream << n
 		iline.clear
 		return true;
