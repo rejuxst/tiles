@@ -29,7 +29,7 @@ ensure
 print "Waiting for input to close\n"
 Ncurses.getch
 Ncurses.close_screen
-puts $thisgame.players
+puts $thisgame.players if $thisgame.class <= Game
 #	tt.db_dump.write()
 
 end

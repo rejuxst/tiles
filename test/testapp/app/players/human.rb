@@ -9,10 +9,10 @@ class Human < Player
 	def process_event(event)
 			# There are lots of cool ways to do this in ruby
 			while 1 # Loop until valid input
-			i=Move.down(@controls[0])   if event == 'w'
-                        i=Move.left(@controls[0])   if event == 'd'
-                        i=Move.right(@controls[0])  if event == 'a'
-                        i=Move.up(@controls[0])     if event == 's'
+			i = Move.down(@controls[0])   if event == 'w'
+                        i = Move.left(@controls[0])   if event == 'd'
+                        i = Move.right(@controls[0])  if event == 'a'
+                        i = Move.up(@controls[0])     if event == 's'
 			return i 		    unless i.nil?
 			event = @ui.getevent 	    if i.nil?
 			end
@@ -48,19 +48,20 @@ class INTERACTIVEUI < ::Ncurses::UI
 		@stream = Array.new(0,"")
 	end
 	def render
+		render_mainwindow
 		render_shell
-		super()
+		Ncurses.refresh
 	end
 	def render_shell
 		rowtop = $thisgame.map.rows + 3
-		r = stream.length;
+		r = 0;# stream.length;
 		stream.each do |l|
 			Ncurses.setpos(rowtop+r,0)
 			Ncurses.addstr(l)
-			r = r-1
+			r = r+1
 		end
-		Ncurses.setpos(rowtop+stream.length+1,0)
- 		Ncurses.addstr(">>#{iline}")
+		Ncurses.setpos(rowtop+stream.length,0)
+ 		Ncurses.addstr("TILES>>> #{iline}")
 		#Ncurses.mvaddstr(rowtop+stream.length+1,0,">>#{iline}")
 	end
 	def sendchar(input)
@@ -75,9 +76,17 @@ class INTERACTIVEUI < ::Ncurses::UI
 			return false;	
 		end
 		return true if iline.empty?
-		stream << ">>#{iline}"
-		n = "#{eval(iline)}" rescue binding.pry
-		#n = "Line Failure"
+		stream << "TILES>>> #{iline}"
+		begin
+			binding.pry and initialize() and render() if(iline == 'pry')
+			n = "#{eval(iline)}" 
+		rescue 
+			n = "#{$!}"
+			Ncurses.close_screen
+			initialize
+			render
+		end
+		
 		stream << n
 		iline.clear
 		return true;
