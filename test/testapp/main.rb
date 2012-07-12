@@ -25,13 +25,12 @@ $thisgame.start
 $thisgame.run
 $thisgame.stop
 ensure
-#binding.pry
 print "Waiting for input to close\n"
 Ncurses.getch
 Ncurses.close_screen
 puts $thisgame.players if $thisgame.class <= Game
+binding.pry
 #	tt.db_dump.write()
-
 end
 
 def require_loop
@@ -69,13 +68,16 @@ puts "$LOAD_PATH LIST:"
 puts $LOAD_PATH
 Dir.open(core) do |ent|
 	ent.entries.each do |f|
-		unless File.directory?(File.join(core,f)) || !(f.match(/\.gitignore/).nil?) || !(f.match(/\.swp/).nil?)
-			succ = gem_original_require File.expand_path File.join(ent.to_path,f.partition('.')[0])
-			puts "Requiring lib file: #{File.join(f.partition('.')[0])} => #{succ}"
-		end
+	unless File.directory?(File.join(core,f)) || !(f.match(/\.gitignore/).nil?) || !(f.match(/\.swp/).nil?)
+		succ = gem_original_require File.expand_path File.join(ent.to_path,f.partition('.')[0])
+		puts "Requiring lib file: #{File.join(f.partition('.')[0])} => #{succ}"	
+	end
 	end
 end
+rescue 
+	binding.pry
 end
+
 begin
 
 require_from_source
@@ -83,4 +85,3 @@ require_from_source
 require 'mixins/ncurses/ncurses_ui'
 run
 end
-
