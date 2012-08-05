@@ -26,8 +26,8 @@ $thisgame.run
 $thisgame.stop
 ensure
 print "Waiting for input to close\n"
-Ncurses.getch
-Ncurses.close_screen
+#Ncurses.getch
+#Ncurses.close_screen
 puts $thisgame.players if $thisgame.class <= Game
 binding.pry
 #	tt.db_dump.write()
