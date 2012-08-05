@@ -1,4 +1,4 @@
-if(/linux/.match(RUBY_PLATFORM).nil?)
+if(/linux/.match(RUBY_PLATFORM).nil? && /darwin/.match(RUBY_PLATFORM).nil?)
 #require 'ffi-ncurses/ncurses' # Use ncurses for Windows and non-curses systems
 else
 require 'curses'	# Use Ruby curses built-in
@@ -7,9 +7,10 @@ require 'UI'
 # export RUBY_FFI_NCURSES_LIB=/lib/libncursesw.so.5.9
 # ^ Run the above line if the FFI::Ncurses library isn't linking
 module Ncurses
+
 include Curses
 
-unless /linux/.match(RUBY_PLATFORM).nil?
+unless ( /linux/.match(RUBY_PLATFORM).nil? && /darwin/.match(RUBY_PLATFORM).nil? )
 #Ncurses = Curses
 #Curses.define_method('mvaddstr') do |x,y,str|
 #	Curses.setpos(x,y)
@@ -71,7 +72,7 @@ end
 
 	end
 end
-unless /linux/.match(RUBY_PLATFORM).nil?
+unless /linux/.match(RUBY_PLATFORM).nil? && /darwin/.match(RUBY_PLATFORM).nil?
 Curses::UI = Ncurses::UI
 Ncurses = Curses 
 end
