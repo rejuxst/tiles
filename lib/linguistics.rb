@@ -6,18 +6,13 @@ class Linguistics
 class ConnectorClass
 	attr_reader :direction
 	attr_reader :name
-	def self.create_connectorclass(name)
-		
+	def self.create_connectorclass(name)	
 	end
 	def initialize(name,direction)
 		@direction = case direction
-			when '-','<','left'
-				-1
-			when '+','>','right'
-				1
-			else
-				raise "Invalid Connector Class Direction #{direction} for #{self}"
-				nil
+			when '-','<','left'  then -1
+			when '+','>','right' then 1
+			else 	raise "Invalid Connector Class Direction #{direction} for #{self}"
 		end
 		@name = name 
 	end
@@ -35,6 +30,9 @@ class WordClass
 		@ctree = ConnectorTree.new(equation)
 		return self
 	end
+	def list_connectors
+		@ctree.list_connectors
+	end
 end #end WordClass
 class Connector
 # Connectors within a word follow 3 rules:
@@ -44,6 +42,7 @@ class Connector
 	attr_accessor 	:source
 	attr_accessor 	:name
 	attr_accessor	:type
+	attr_accessor   :target
 	def self.from_equation(eqname,source_equation)
 		c = Connector.new
 		c.type = eqname[-1]
@@ -51,36 +50,66 @@ class Connector
 		c.source = source_equation
 		return c
 	end
+	def initialize(csrc,ctar,connclass) 
+		@source = csrc
+		@target = ctar
+		@type   = connclass
+	end
 end #end Connector
 class Word
 	attr_reader :word
 	attr_reader :wordclass
 	attr_reader :connectors
 	def initialize(wordclass,word)
-		@wordclass = worclass
+		raise "Invalid inputs wordclass is a #{wordclass.class} and word is a #{word.class}" unless wordclass.class <= WordClass and word.class <= String
+		@wordclass = wordclass
 		@word = word
-		@connectors = wordclass.gen_connectors()
+	end
+	def list_connectors
+		@wordclass.list_connectors
 	end
 end
 class Sentence
+# Maybe make a table of all the possible Connectors and find first set to satisfy solution
+# Remeber to generate the list of Connectors such that they satisfy the Planarity rulen
 	attr_reader :words
-	def initalize()
-		@words = []
+	def initialize(array = [])
+		@words = array
+		@words.each {|w| connector_list.push w.list_connectors }
 	end
 	def add_word(word)
-		@words << word
+		@words<< word
 	end
 	def <<(word)
 		add_word(word)
 	end
 	def create_linkages_table()
-		connector_list = []
-		@words.each {|w| connector_list = connector_list + w.connectors}
+		link_list = []
+		# Generate All possible combintations
+		(0..(@words.length-1)).each do |outer|
+		(0..(@words.length-1)).each do |inner|
+			next if outer >= inner
+			oconn = @words[outer].list_connectors
+			iconn = @words[inner].list_connectors
+			oconn.each do |ostr|
+			ostr.scan /(\w*)\+/ do |match|
+				match = match[0]
+				matches = (iconn.collect { |io| io =~ /(#{match})-/ ; $1}).delete_if { |e| e == nil }
+				link_list.push Connector.new(@words[outer],@words[inner],match) unless matches.empty?
+			end
+			end
+		end
+		end	
+		return link_list	
+	end
+	def resolve
+		link_list = create_linkages_table	
 		
 	end
 end #end Sentence
 class ConnectorTree
 	attr_accessor :tree	
+	Node = Struct.new("Node",:type,:data,:cnt,:any,:sat)
 	def initialize(equation)
 		@equation = equation
                 @tree = parse_equation(equation)
@@ -95,63 +124,54 @@ class ConnectorTree
 		end
                 generate_equation_tree(equ.split(" ").reverse)
         end
-        def generate_equation_tree(array)
-		output = {:type => nil, :up => nil, :terms => []}
-		raise "Not enough terms in #{array} of #{orig_equation}" if array.last == 'and' or array.last == 'or'
-		(output[:terms] << array[0] and return output) if array.length == 1
-                while !(p = array.pop).nil?
-                        item = case p
-                                when "and"
-				raise "multiple operations applied incorrectly #{array} in #{orig_equation}" unless output[:type].nil?
-				output[:type] = :and
-				nil
-                                when "or"
-				raise "multiple operations applied incorrectly #{array} in #{orig_equation}" unless output[:type].nil?
-				output[:type] = :or
-				nil
-				when "(","{"
-					a2 = [];cnt = 1;
-					while cnt > 0
-						raise "Missing closing #{p} in #{orig_equation}" if array.empty?
-						cnt = cnt + 1 if array.last.match(/[(,{]/)
-						cnt = cnt - 1 if array.last.match(/[),}]/) 
-						a2.push(array.pop) if cnt > 0
-					end
-					array.pop	# Get Rid of the last } or )
-					unless p == "{"
-						temp = generate_equation_tree(a2.reverse)
-						temp[:up] = output
-						temp
+        def generate_equation_tree(array, bracket = nil)
+		node = Node.new
+		node.any = (bracket =="{")?true : false
+		node.data = []
+		previous = nil
+		ptype = nil
+		while  ele = array.pop
+			etype = case ele
+				when /and/,/or/
+					raise "Missing operant to #{ele}. Last term was #{previous}" if ptype == :operator 
+					if node.type.nil? || node.type == ele.to_sym
+						node.type = ele.to_sym 
 					else
-						{:type => :any, :up => output, :terms => [generate_equation_tree(a2.reverse)]}
+						raise "Does not support order of operations (encountered conflicting operators). Explicitly bracket"
+					end	
+					:operator
+				#when /or/
+				#	raise "Missing operant to or. Last term was #{previous}"  if ptype != :data 
+				when /(\w*)\+/, /(\w*)\-/
+					node.data.push ele
+					:data
+				when /[),}]/
+					if (bracket == "{" && ele != "}") || (bracket == "(" && ele != ")") 
+						raise "Unexpected bracket: #{ele}. operation began with #{bracket}."
 					end
-                                when ")","}"
-					raise "Missing closing #{p} in #{orig_equation}"
-	                        else
-					p
-                        end
-			if !item.nil? && output[:terms].length == 2 	
-				raise "Encountered extraneous input in equation #{orig_equation}" 
+					return node unless node.type.nil? and !(node.any && node.data.length == 1)
+					return node.data[0] unless node.data.empty?
+					raise "Empty Brackets"
+					:closing
+				when /[(,{]/
+					node.data.push generate_equation_tree(array,ele)
+					:opening	
 			end
-			output[:terms] << item unless item.nil?
-                end
-		raise "Parse error in equation in #{orig_equation}" if output[:type].nil? || output[:terms].empty? 
-		return output
-	end
-	def gen_connectors(input = @tree)
-		output = []
-		input[:terms].each do |t|
-			temp =  [Connector.from_equation(t,input)] if t.class <= String
-			temp = gen_connectors(t) if t.class <= Hash
-			output = output + temp
+			#puts "#{ele} was of type #{etype}"
+			previous = ele; ptype = etype
 		end
+		return node unless node.type.nil?
+		return node.data[0] unless node.data.empty?
+		raise "Empty equation"
+	end
+	def list_connectors(input = @tree)
+		return [input] if input.class == String
+		output = []
+		input.data.each do |d|
+			list_connectors(d).each{|gen| output.push gen}
+		end	
 		return output
 	end
-	def swap!()
-		output = {:any => [], :rest => []}
-		temp = @tree
-		# Initialize swap
-		# Do a Swap	
-	end
+
 end #end Connector Tree
 end #end Linguistics
