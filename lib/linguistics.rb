@@ -30,8 +30,12 @@ class WordClass
 		@ctree = ConnectorTree.new(equation)
 		return self
 	end
-	def list_connectors
-		@ctree.list_connectors
+	def list_links
+		@ctree.list_links
+	end
+
+	def sat?(con_array) 
+		return @ctree.sat?(con_array)
 	end
 end #end WordClass
 class Connector
@@ -65,8 +69,8 @@ class Word
 		@wordclass = wordclass
 		@word = word
 	end
-	def list_connectors
-		@wordclass.list_connectors
+	def list_links
+		@wordclass.list_links
 	end
 end
 class Sentence
@@ -89,13 +93,15 @@ class Sentence
 		(0..(@words.length-1)).each do |outer|
 		(0..(@words.length-1)).each do |inner|
 			next if outer >= inner
-			oconn = @words[outer].list_connectors
-			iconn = @words[inner].list_connectors
+			oconn = @words[outer].list_links
+			iconn = @words[inner].list_links
 			oconn.each do |ostr|
 			ostr.scan /(\w*)\+/ do |match|
 				match = match[0]
 				matches = (iconn.collect { |io| io =~ /(#{match})-/ ; $1}).delete_if { |e| e == nil }
-				link_list.push Connector.new(@words[outer],@words[inner],match) unless matches.empty?
+				#link_list.push Connector.new(@words[outer],@words[inner],match) unless matches.empty?
+				link_list.push [outer, inner] unless matches.empty? # Generate Tuples for Word Pair
+			#puts "Link: #{@words[outer].word} | #{@words[inner].word} : #{match}" unless matches.empty?
 			end
 			end
 		end
@@ -104,11 +110,18 @@ class Sentence
 	end
 	def resolve
 		link_list = create_linkages_table	
-		
+		((@words.length)..(link_list.length)).each do |i|
+		link_list.combination(i) do |possible_link_array|
+			possible_link_array.each do |ele|
+
+			end 
+		end
+		end
 	end
 end #end Sentence
 class ConnectorTree
 	attr_accessor :tree	
+	attr_accessor :connector_list
 	Node = Struct.new("Node",:type,:data,:cnt,:any,:sat)
 	def initialize(equation)
 		@equation = equation
@@ -116,6 +129,9 @@ class ConnectorTree
         end
 	def orig_equation
 		return @equation
+	end
+	def sat?
+
 	end
         def parse_equation(equation)
                 equ = ''
@@ -164,11 +180,11 @@ class ConnectorTree
 		return node.data[0] unless node.data.empty?
 		raise "Empty equation"
 	end
-	def list_connectors(input = @tree)
+	def list_links(input = @tree)
 		return [input] if input.class == String
 		output = []
 		input.data.each do |d|
-			list_connectors(d).each{|gen| output.push gen}
+			list_links(d).each{|gen| output.push gen}
 		end	
 		return output
 	end

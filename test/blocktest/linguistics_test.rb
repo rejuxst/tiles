@@ -48,7 +48,7 @@ def load_test_sentences
 	$sentences.push sentence_from_string("A dog ran.")
 	$sentences.push sentence_from_string("The dog ran fast.")
 	$sentences.each do |local|
-		puts local.create_linkages_table rescue binding.pry
+		puts	"Sentence Link Table: #{local.create_linkages_table}" rescue binding.pry
 	end
 
 end
