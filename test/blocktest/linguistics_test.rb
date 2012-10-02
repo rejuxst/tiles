@@ -48,9 +48,9 @@ def load_test_sentences
 	$sentences.push sentence_from_string("A dog ran.")
 	$sentences.push sentence_from_string("The dog ran fast.")
 	$sentences.each do |local|
-		puts	"Sentence Link Table: #{local.create_linkages_table}" rescue binding.pry
+		puts	"Sentence Link Table: #{local.create_linkages_table}"
 	end
-
+	$sentences.each { |sen| sen.resolve rescue binding.pry }
 end
 def sentence_from_string(string)
 	arr = string.split(/[\., ]/).collect { |s| s.downcase }
