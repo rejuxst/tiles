@@ -69,7 +69,7 @@ puts $LOAD_PATH
 Dir.open(core) do |ent|
 	ent.entries.each do |f|
 	unless File.directory?(File.join(core,f)) || !(f.match(/\.gitignore/).nil?) || !(f.match(/\.swp/).nil?)
-		succ = gem_original_require File.expand_path File.join(ent.to_path,f.partition('.')[0])
+		succ = gem_original_require File.expand_path(File.join(ent.to_path,f.partition('.')[0]))
 		puts "Requiring lib file: #{File.join(f.partition('.')[0])} => #{succ}"	
 	end
 	end

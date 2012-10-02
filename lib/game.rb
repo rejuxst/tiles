@@ -36,7 +36,7 @@ class Game
 	end
 	def actors_take_turns
 		# find actors on current turn
-		turnproc = Proc.new() do |t,&y|			# Recursive actor check
+		turnproc = Proc.new() do |t, &y|			# Recursive actor check
 			if t.class <= Actor && t.turn == turn	# Check current
 				t.take_turn if t.controller.nil?
 			end

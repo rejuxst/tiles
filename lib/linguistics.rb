@@ -12,7 +12,7 @@ class ConnectorClass
 		@direction = case direction
 			when '-','<','left'  then -1
 			when '+','>','right' then 1
-			else 	raise "Invalid Connector Class Direction #{direction} for #{self}"
+			else raise "Invalid Connector Class Direction #{direction} for #{self}"
 		end
 		@name = name 
 	end
@@ -28,10 +28,17 @@ class WordClass
 	def initialize(classname,equation)
 		@name = classname.to_s
 		@ctree = ConnectorTree.new(equation)
+		@equation = equation
 		return self
 	end
 	def list_links
-		@ctree.list_links
+		output = []
+                equ = ''
+                @equation.each_char do |c|
+			 equ << ( (c.match(/[{,},(,)]/))? " #{c} " : c ) 
+		end
+		equ.split(" ").each { |ele| output.push ele if (ele=~ /(and|or|[{,},(,)])/).nil?}
+		return output
 	end
 
 	def sat?(con_array) 
@@ -61,6 +68,7 @@ class Connector
 	end
 end #end Connector
 class Word
+#organize using ports?
 	attr_reader :word
 	attr_reader :wordclass
 	attr_reader :connectors
@@ -79,7 +87,7 @@ class Sentence
 	attr_reader :words
 	def initialize(array = [])
 		@words = array
-		@words.each {|w| connector_list.push w.list_connectors }
+		#@words.each {|w| connector_list.push w.list_connectors }
 	end
 	def add_word(word)
 		@words<< word
@@ -100,7 +108,7 @@ class Sentence
 				match = match[0]
 				matches = (iconn.collect { |io| io =~ /(#{match})-/ ; $1}).delete_if { |e| e == nil }
 				#link_list.push Connector.new(@words[outer],@words[inner],match) unless matches.empty?
-				link_list.push [outer, inner] unless matches.empty? # Generate Tuples for Word Pair
+				link_list.push [outer, inner, match] unless matches.empty? # Generate Tuples for Word Pair
 			#puts "Link: #{@words[outer].word} | #{@words[inner].word} : #{match}" unless matches.empty?
 			end
 			end
@@ -156,8 +164,8 @@ class ConnectorTree
 						raise "Does not support order of operations (encountered conflicting operators). Explicitly bracket"
 					end	
 					:operator
-				#when /or/
-				#	raise "Missing operant to or. Last term was #{previous}"  if ptype != :data 
+				# when /or/
+				# raise "Missing operant to or. Last term was #{previous}"  if ptype != :data 
 				when /(\w*)\+/, /(\w*)\-/
 					node.data.push ele
 					:data
