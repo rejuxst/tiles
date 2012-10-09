@@ -5,13 +5,13 @@ end
 def require_from_source
 	$LOAD_PATH << File.absolute_path(File.join(File.dirname(__FILE__),'/../../lib/'))
 	core = File.join(File.dirname(__FILE__),"..","..","lib")
-	puts "$LOAD_PATH LIST:"
-	puts $LOAD_PATH
+	#puts "$LOAD_PATH LIST:"
+	#puts $LOAD_PATH
 	Dir.open(core) do |ent|
 		ent.entries.each do |f|
 		unless File.directory?(File.join(core,f)) || !(f.match(/\.gitignore/).nil?) || !(f.match(/\.swp/).nil?)
 			succ = gem_original_require File.expand_path File.join(ent.to_path,f.partition('.')[0])
-			puts "Requiring lib file: #{File.join(f.partition('.')[0])} => #{succ}"
+#			puts "Requiring lib file: #{File.join(f.partition('.')[0])} => #{succ}"
 		end
 		end
 	end
@@ -48,7 +48,7 @@ def load_test_sentences
 	$sentences.push sentence_from_string("A dog ran.")
 	$sentences.push sentence_from_string("The dog ran fast.")
 	$sentences.each do |local|
-		puts	"Sentence Link Table: #{local.create_linkages_table}"
+		puts	"Sentence(\"#{local.to_sentence()}\") \n\tLink Table: #{local.create_linkages_table}"
 	end
 	$sentences.each { |sen| sen.resolve rescue binding.pry }
 end

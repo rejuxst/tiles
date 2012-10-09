@@ -25,6 +25,9 @@ class WordClass
 	def self.create_wordclass(classname,equation)
 		return WordClass.new(classname,equation)
 	end
+	def get_tree()
+		return @ctree
+	end
 	def initialize(classname,equation)
 		@name = classname.to_s
 		@ctree = ConnectorTree.new(equation)
@@ -50,21 +53,18 @@ class Connector
 # Planarity: 	The links do not cross (when drawn above the word)
 # Connectivity: The links suffice to connect all the words of the sequence together.
 # Satisfaction: The links satisfy the linking requirements of each word in the sequence
-	attr_accessor 	:source
-	attr_accessor 	:name
-	attr_accessor	:type
-	attr_accessor   :target
-	def self.from_equation(eqname,source_equation)
-		c = Connector.new
-		c.type = eqname[-1]
-		c.name = eqname.delete '-+' 
-		c.source = source_equation
-		return c
+	attr_accessor :forward
+	attr_accessor :back
+	def initialize(fp,bp,n)
+		@forward  = fp
+		@back = bp
+		@name = n
 	end
-	def initialize(csrc,ctar,connclass) 
-		@source = csrc
-		@target = ctar
-		@type   = connclass
+	def match?(string)
+		return (string == "#{@name}+" || string == "#{@name}-" ) ? true : false
+	end
+	def type
+		return @name
 	end
 end #end Connector
 class Word
@@ -73,12 +73,22 @@ class Word
 	attr_reader :wordclass
 	attr_reader :connectors
 	def initialize(wordclass,word)
+		@connectors = []
 		raise "Invalid inputs wordclass is a #{wordclass.class} and word is a #{word.class}" unless wordclass.class <= WordClass and word.class <= String
 		@wordclass = wordclass
 		@word = word
 	end
 	def list_links
 		@wordclass.list_links
+	end
+	def delete_connectors
+		@connectors = []
+	end
+	def add_connector(con)
+		@connectors.push con
+	end
+	def equation_satisfied?
+		@wordclass.sat?(@connectors)
 	end
 end
 class Sentence
@@ -95,6 +105,10 @@ class Sentence
 	def <<(word)
 		add_word(word)
 	end
+	def to_sentence()
+		array = @words.collect {|w| "#{w.word}"}
+		return array.join(" ")
+	end
 	def create_linkages_table()
 		link_list = []
 		# Generate All possible combintations
@@ -105,6 +119,7 @@ class Sentence
 			iconn = @words[inner].list_links
 			oconn.each do |ostr|
 			ostr.scan /(\w*)\+/ do |match|
+				@words[ele[0]].add_connector("ele[2]+")
 				match = match[0]
 				matches = (iconn.collect { |io| io =~ /(#{match})-/ ; $1}).delete_if { |e| e == nil }
 				#link_list.push Connector.new(@words[outer],@words[inner],match) unless matches.empty?
@@ -118,11 +133,16 @@ class Sentence
 	end
 	def resolve
 		link_list = create_linkages_table	
-		((@words.length)..(link_list.length)).each do |i|
+		puts "Resolving A Sentence with #{@words.length} words, and #{link_list.length} links"
+		((@words.length-1)..(link_list.length)).each do |i|
+		puts "\tTrying #{i} link combinations:"
 		link_list.combination(i) do |possible_link_array|
+			puts "\t\t#{possible_link_array}"
 			possible_link_array.each do |ele|
-
+				@words[ele[0]].add_connector(Connector.new(ele[0],ele[1],ele[2]))
+				@words[ele[1]].add_connector(Connector.new(ele[0],ele[1],ele[2]))
 			end 
+			
 		end
 		end
 	end
@@ -138,8 +158,20 @@ class ConnectorTree
 	def orig_equation
 		return @equation
 	end
-	def sat?
-
+	def sat?(con_array)
+		puts "Attempting to satisfy tree with #{con_array}"
+		if(@tree.class <= String)
+			i = con_array.index{ |c| c.match?(@tree)}
+			return i.nil?
+		end
+		resolve_node(@tree,con_array)
+	end
+	def resolve_node(node,con_array)
+		output = :empty
+		type = node.type
+		data.each do |d|
+			
+		end
 	end
         def parse_equation(equation)
                 equ = ''
