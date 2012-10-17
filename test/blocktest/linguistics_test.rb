@@ -1,6 +1,6 @@
 require 'pry'
 def non_interactive?
-	return false
+	return true
 end
 def require_from_source
 	$LOAD_PATH << File.absolute_path(File.join(File.dirname(__FILE__),'/../../lib/'))
@@ -20,7 +20,7 @@ rescue
 end
 def add_to_dict(word,wordclass)
 	$dictionary = {} if $dictionary.nil?
-	$dictionary[word] = Linguistics::Word.new(wordclass,word)
+	$dictionary[word] = wordclass
 end
 def load_test_word_lib
 	add_to_dict("a",$indefinite_article)
@@ -44,18 +44,22 @@ rescue
 	binding.pry
 end
 def load_test_sentences
+	begin
 	$sentences = []
-	$sentences.push sentence_from_string("A dog ran.")
-	$sentences.push sentence_from_string("The dog ran fast.")
+	$sentences.push Linguistics::Sentence.from_string("A dog ran.",$dictionary)
+	$sentences.push Linguistics::Sentence.from_string("The dog ran fast.",$dictionary)
 	$sentences.each do |local|
-		puts	"Sentence(\"#{local.to_sentence()}\") \n\tLink Table: #{local.create_linkages_table}"
+		puts	"Sentence(\"#{local.to_string()}\") \n\tLink Table: #{local.create_linkages_table}"
+	end
+	rescue
+		binding.pry
 	end
 	$sentences.each { |sen| sen.resolve rescue binding.pry }
 end
 def sentence_from_string(string)
 	arr = string.split(/[\., ]/).collect { |s| s.downcase }
 	output = Linguistics::Sentence.new
-	arr.each {|word| output.add_word $dictionary[word] }
+	arr.each {|word| output.add_word Linguistics::Word.new($dictionary[word],word) }
 	return output
 rescue 
 	binding.pry
