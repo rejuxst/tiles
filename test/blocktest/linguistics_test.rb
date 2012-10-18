@@ -1,6 +1,6 @@
 require 'pry'
 def non_interactive?
-	return true
+	return false
 end
 def require_from_source
 	$LOAD_PATH << File.absolute_path(File.join(File.dirname(__FILE__),'/../../lib/'))
