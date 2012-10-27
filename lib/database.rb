@@ -29,20 +29,23 @@ module Database
 #####################################
 # NOTE Should redesign to be transactional
 #####################################
-# GUID Format:
-# GUID are global identifies that allow referencing objects on a global basis. The format is:
-# @g or @l  >>>> Each GUID regardless of scope should *ALWAYS* be prepended with either of these.
-#	    >>>> @g: The GUID is references at a global scope. When recusively parsing this GUID
-#	    >>>>>>>> always convert the @g to @l once outside the highest level db in a db structure
-# >##>##    >>>> Each GUID is a hierarchical reference and each :## is the current db levels entry index
+# UID Format:
+# UID are global identifies that allow referencing objects on a global basis. The format is:
+# @ or %  >>>> Each UID regardless of scope should *ALWAYS* be prepended with either of these.
+#	    >>>> @: The UID is references at a global scope. When recusively parsing this UID
+#	    >>>>>>>> always convert the @ to % once outside the highest level db in a db structure
+# >##>##    >>>> Each UID is a hierarchical reference and each :## is the current db levels entry index
 #	    >>>> thus this example value is two levels deep from the reference's db context
 #	    >>>> This format is designed to be consumed at >## for easy "##".to_sym to convert to
 #	    >>>> Symbols used by the databases indexing method
-#TODO: Create a guid class to allow encapsulated guid management	     
+#TODO: Create a uid class to allow encapsulated guid management	     
 # Ex)
-#  @g>####>####>####
+#  @####>####>####
 #  @l>####>####>####
 #  @g>14512>123923>15012333 >>>>> This is a global pointer to an instance 3 levels below the global database
+# UID Usage:
+# 	All UIDs 
+#
 #
 ####################################
 #############################################################################################################
@@ -70,7 +73,13 @@ module Database
 #TODO Add inter_db transactors so all db control functions can be privatized
 
 ####################################
-module GUID ## Not in use currently
+class UID ## Not in use currently
+  def initialize(string)
+
+  end
+  def self.from_string(string)
+	return UID.new(string)
+  end
   def is_local?(input)
   end
   def is_global?(input)
@@ -109,7 +118,7 @@ end
   #TODO: Extend this function to account for diffrent types of instance lookups
   #TODO: Extend this to support function aliasing to database instances
   #TODO: Prevent this function from returning guids that point to non-instances (e.g data)
-	return guid_lookup(input);	
+	return lookup_guid(input);	
   end
 ###################################################################
 # General DB lookup functions

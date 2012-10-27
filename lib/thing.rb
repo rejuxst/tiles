@@ -11,7 +11,7 @@ class Thing
 	def self.inherited(subclass)
 		puts "A New Thing: #{subclass}"
 	end	
-	def initialize(args)
+	def initialize(args = {})
 		@ASCII = '0'
 		@ASCII = args[:ASCII] if !args[:ASCII].nil?
 		self.init_db($thisgame,nil,nil);

@@ -1,7 +1,9 @@
 require "generic"
+require 'database'
 class Tile
 	include Generic::Base
 	include Generic::Respond_To
+	include Database
 	class_responds_to :Move, :via, :none
 	attr_reader :ASCII #this should only be read as the data should be stored in database
 	def initialize(*args)
