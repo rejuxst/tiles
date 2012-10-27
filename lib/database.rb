@@ -80,136 +80,107 @@ module Database
 #  
 #
 #############################################################################################################
-## Database Transactional model
-  def add_to_db(input,as = :instance)
-	case as
-	  when :instance
-		input.init_db(self,assign_guid(input))
-	  when :data
-		# Dunno Yet
-	  else
-		raise "Tried to add_to_db on #{self} with unknown as format => #{as}"
+### Class Functions ################
+  def self.read_db(xmlstring)	
+  end
+  def self.is_database?(input)
+	return true
+  end
+##%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%######
+### Database Variables   ###########
+  attr_reader :db_parent # The owner of this Database object, if nil this is the Master Database 
+  attr_reader :key	 # The Key for this database within the db_parent
+  attr_reader :max_key	 # The total number of assigned keys (@max-key-1 is last assigned key) @max_key is next assignable key
+  attr_reader :db	 # The storage array for the database
+  attr_reader :db_alive  # This is a status flag to prevent references from resolving dead pointers 
+###################################
+## Database Transactions ##########
+# NOTE: All database transations should return self unless destructive 
+  def add_to_db(input)
+	the_key = assign_key(input)
+	@db[the_key] = input
+	input.set_key(the_key,self) if Database.is_database?(input)
+	return self
+  end
+  def remove_from_db(input)      # Should never be called by designer (use only for moving)
+	if Database.is_database?(input)
+		@db[:"#{input.key}"] = nil 
+		input.set_key(nil,nil)
+	else
+		@db[find_key(input)] = nil
 	end
+	return self
   end
-  def remove_from_db(input,as = :instance)
-	case as
-          when :instance
-                remove_guid(input) 
-          when :data
-                # Dunno Yet
-          else
-                raise "Tried to add_to_db on #{self} with unknown as format => #{as}"
-        end
+  def destroy_entry(input)	 # Destroys an object
+	remove_from_db(input)
+	input.destroy_self() if Database.is_database?(input)
   end
-#TODO Add inter_db transactors so all db control functions can be privatized
+  def give_to_db(input,target_db) #gives an object owned by self to a target_db
+	remove_from_db(input)
+	target_db.add_to_db(input)
+	return self
+  end
+  def move_self_to_db(target_db)
+	@db_parent.remove_from_db(self) if Database.is_database?(@db_parent)
+	target_db.add_to_db(self)
+	return self
+  end
 
-####################################
-class UID ## Not in use currently
-  def initialize(string)
-
-  end
-  def self.from_string(string)
-	return UID.new(string)
-  end
-  def is_local?(input)
-  end
-  def is_global?(input)
-	return !self.is_local?(input)
-  end
-  def top_id(input,as = Symbol)
-	output = ''
-  end
-end
-# Actual Database Access primitives
-  attr_reader :db_parent
-  attr_reader :guid,:sid
-  attr_reader :data,:instances
-
-  def self.read_db(xmlstring)
+###################################################################
+# Instance db control functions
+  def find_instance(input)
+  # Look up a instance in this database using guid
+  #TODO: Extend this function to account for diffrent types of instance lookups
+  #TODO: Extend this to support function aliasing to database instances
+  #TODO: Prevent this function from returning guids that point to non-instances (e.g data)
 	
   end
   def write_db(file)
 	file << db_dump()
   end
-  def init_db(parent,guid,sid=nil)
-	set_sid(sid);
-	set_guid(guid);
-	@db_parent=parent;
-	@instances = {}
-	@data = {}
+  def init_database(parent)
+	parent.add_to_db(self) unless parent.nil?
+	@db = Hash.new()
+	@max_key = 0
+	@db_alive = true
   end
-  def destroy_record_self()
+  def destroy_record_of_self()
   # Destroy the record of one's self in the containing db
-  	return db_parent.remove_guid(self.guid)
+  	return db_parent.remove_from_db(self)
   end
-###################################################################
-# Instance db control functions
-  def find_instance(input,as = :guid)
-  # Look up a instance in this database using guid
-  #TODO: Extend this function to account for diffrent types of instance lookups
-  #TODO: Extend this to support function aliasing to database instances
-  #TODO: Prevent this function from returning guids that point to non-instances (e.g data)
-	return lookup_guid(input);	
+  def destroy_self
+	destroy_record_of_self
+	@db_alive = false
+	return nil
   end
 ###################################################################
 # General DB lookup functions
-  def lookup_guid(input_guid)
-  # Uses the input guid to search for an object. This follows standard GUID format
-	if(input_guid.class == Symbol) # Assume that GUID is for this level only
-		db_lookup(input_guid); 
-	elsif(input_guid.class == String)
-		# GUID consume
-	else
-raise <<EOF
-Record::guid_lookup failed when #{input_guid} was passed to Record::guid_lookup.
-Expected class to be Symbol or String and got #{input_guid.class} instead.
-EOF
-  	end
-  end
-  def db_lookup(db_index)
-	return instances[db_index.to_sym];
-  rescue 
-	raise "Unable to translate db_lookup from input db_index => #{db_index} "
-  end 
 ###################################################################
-# Sub GUID management functions
-###TODO: Add methodology for preserving recently used GUIDs 
-######## so references don't react unexpectedly.
-  def assign_guid(input_instance)
-	output = get_guid(input_instance)
-	return output unless output.nil?
-	i = 1;
-	i = i +1 until instances[i.to_s.to_sym].nil?
-	@instances[i.to_s.to_sym]= input_instance;
-	return i.to_s
+### Key Management functions ########################
+  def assign_key(input)
+	@max_key = @max_key + 1
+	return :"#{@max_key-1}"
   end
-  def remove_guid(input_guid)
-	return false if instances[input_guid.to_s.to_sym]
-	instances[input_guid.to_s.to_sym] = nil;
-	return true; 
-  rescue
-	raise "Input GUID not of the correct format #{input_guid}"
+  def set_key(key_val,parent)
+	@key = key_val
+	@db_parent = parent
+  end
+  def find_key(input)   
+  # Find key assumes that if your calling this input is 
+  # not a database (though it will work if it is its just slow)
+  # This function does object_id comparisons not equality so 
+  # It will fail on find_key("mark") even if there is a "mark" in the db 
+	@db.each_pair { |k,val|	return k if val.object_id == input.object_id }
   end
 ###################################################################
-###################################################################
-#TODO: Make these Record/DB private functions
-###### Maybe make them non-private for private-distros?
-  def set_guid(input_guid)
-  # set_guid(guid): Sets the GUID of this object. (This should only be called by the database adding this object)
-	return @guid=input_guid
+  def for_each_db_entry(&blk)
+	@db.each_value{|v| yield v}
   end
-  def set_sid(sid)
-	return @sid=sid
-  end
-  def get_guid(input_item)
-	return nil;	#TODO Use get_guid to prevent repeated guid assignment
-  end
-################################################################### 
   def for_each_instance(&blk)
-	@instances.each_value{|v| yield v}
+	@db.each_value{|v| yield v if Database.is_database?(v)}
   end
   def for_each_data(&blk)
-	@data.each_value{|v| yield v}
+	@db.each_value{|v| yield v unless Database.is_database?(v)}
   end
   def db_dump?()
 	return true;

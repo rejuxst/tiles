@@ -14,7 +14,7 @@ class Thing
 	def initialize(args = {})
 		@ASCII = '0'
 		@ASCII = args[:ASCII] if !args[:ASCII].nil?
-		self.init_db($thisgame,nil,nil);
+		self.init_database($thisgame);
 		args[:controller].take_control(self) if !args[:controller].nil?
 	end
 end
