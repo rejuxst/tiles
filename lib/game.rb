@@ -1,10 +1,12 @@
 require "UI"
 require "generic"
 require "active"
+require 'database'
 class Game
 	include Generic::Base
 	include Generic::Respond_To
 	include Active
+	include Database
 	attr_accessor :map, :things, :players, :views
 	attr_accessor :turn
 	def initialize
@@ -15,6 +17,7 @@ class Game
 		@things = []
 		@turn = 0
 		init
+		init_database(nil)
 	end
 	def init
 		@map = Map.new
