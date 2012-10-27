@@ -3,13 +3,56 @@ require 'rexml/element'
 module Database
 #############################################################################################################
 # Databases record overall game information including table information
-# The main game database includes definitions on how to structure db elements
+# A database is a module for extending Objects to allow inter object communication and maintinence.  
+# An Object that is a database is recordable, can create other Objects that can be recorded, and
+# has easy self contained methods for describing itself to others.
 # 
-# Instances can have subinstances and data:
-# -- Data has a unique identifier understood by the Object Class. This Identifier should be a string
-# -- but it can be anything. This ID is NOT a GUID it is only used be the loading processor to process
-# -- the data.
-#	XML Instance Format:
+# Why do we need a database structure? 
+#  The primary reason is to allow a smooth process for saving data in a concise manner, and to allow
+#  for object refrencing and imiplicit ownership. Ownership is a integral part of this game structure
+#  but it is not 100% absolute. This allows a designer to use the database as a method of managing 
+#  single owner operations, while avoiding making it an issue.
+#
+#################
+# Design priciples:
+# 1) For a given Game environement there should be a "defacto" global database. This is not a hard requirement
+#    but more of an imlpication of using this library in its standard structure. Formally there must be a 
+#    clear recursive method call from one object that records ALL information on a game, in a manner, that
+#    prevents unexpected state on reinstanciation.
+# 2) No cyclical ownership: database is intended to be utilized in a tree structure not a directed graph.
+#    this requirement may or may not be enforced during run time. 
+#	NOTE: Not sure if this is needed
+#	NOTE: This only applies to database parent child relationships. cyclical references are fine
+# 3) When a Object is removed from the game it implies that all its childe DBs and Data are destroyed
+# 4) Only other databases can be referenced from a given database. This means objects that are not 
+#    also dbs can only be refrenced via there owner (Ruby uses smart pointers and thus object destruction
+#    is not as clean cut.)
+#      4a) An extention to this is that databases are designed to have a creation and destruction routine
+#           but data (or non-db objects) dont have to exist in that manner.
+# 5) Objects can be moved from one database to another, and can thus change "owners"
+# 6) Databases can and should store relational requirements for its elements. Actions on elements in the
+#    database that are achieved via the given database should be trackable and effectable in a 
+#    designable manner. (i.e If a enemy spell destroys all potions a player owns the player object should
+#    be made aware of it.
+##################
+# Database Entries and Structure:
+# Instance: Another Database whose "parent_db" is the current database. An instance is by definition
+#           a Object that inludes Database. Due to this there is no explicit filtering for this on storage
+# Data:     Any Object that is NOT a Database. This is intended to be used for MACROS or helper objects 
+#	    which cannot own other objects and only has meaning to the owning db. It shouldn't need
+#           to be aware of who owns it in any functional manner. (Though the designer can add that as needed)
+# Reference: A reference to another Database. This does not imply ownership and destruction of either object
+#            doesn't imply any effect on the object unless enforced by the database.
+# Relative Reference: A reference to another Database or Object. A relative reference is a recorded path 
+#                     from one database to an Object. This path can be any number of hops and can
+#		      utilize any db serach method to resolve to its destination (i.e "My Allies Bow"
+#		      would be a reference that points to your ally and resolves your allies bow 
+#                     reference to his actual bow object).
+# Requirements: All References must be referencible with a NON-NUMERIC key (that is 1/"1" is not allowed)
+#		
+#######################
+# Storing a Database:
+# XML Instance Format:
 #<instance ID=#### GUID=#### DBID=####>
 #	<!-- All element IID are referenced via their hosts IID so for a db item its => instance.db.item
 #	<!-- Class type is not used by the parser will only exist in pretty-print mode -->
@@ -27,27 +70,15 @@ module Database
 #	</instance>
 #<instance>
 #####################################
-# NOTE Should redesign to be transactional
-#####################################
-# UID Format:
-# UID are global identifies that allow referencing objects on a global basis. The format is:
-# @ or %  >>>> Each UID regardless of scope should *ALWAYS* be prepended with either of these.
-#	    >>>> @: The UID is references at a global scope. When recusively parsing this UID
-#	    >>>>>>>> always convert the @ to % once outside the highest level db in a db structure
-# >##>##    >>>> Each UID is a hierarchical reference and each :## is the current db levels entry index
-#	    >>>> thus this example value is two levels deep from the reference's db context
-#	    >>>> This format is designed to be consumed at >## for easy "##".to_sym to convert to
-#	    >>>> Symbols used by the databases indexing method
-#TODO: Create a uid class to allow encapsulated guid management	     
-# Ex)
-#  @####>####>####
-#  @l>####>####>####
-#  @g>14512>123923>15012333 >>>>> This is a global pointer to an instance 3 levels below the global database
-# UID Usage:
-# 	All UIDs 
+# Actual Storage:
+# Everything is stored as a hash. Access can be via an integer,string or symbol.
+# Any integer access implies a ID lookup, for an owned object it translates to :"#". 
+#   []= is not defined for integers (though might define a key that implies add_to_db)
+# Any symbol lookup can be an instance or refrence lookup. A symbol will be passed as is
+# for lookup (implying a key lookup). If it returns nil it will convert to a string,
+# and check that its not numeric then do a reference lookup.
+#  
 #
-#
-####################################
 #############################################################################################################
 ## Database Transactional model
   def add_to_db(input,as = :instance)
