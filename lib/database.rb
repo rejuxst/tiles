@@ -104,10 +104,10 @@ module Database
   end
   def remove_from_db(input)      # Should never be called by designer (use only for moving)
 	if Database.is_database?(input)
-		@db[:"#{input.key}"] = nil 
+		@db.delete(:"#{input.key}") 
 		input.set_key(nil,nil)
 	else
-		@db[find_key(input)] = nil
+		@db.delete(find_key(input))
 	end
 	return self
   end
@@ -128,17 +128,7 @@ module Database
 
 ###################################################################
 # Instance db control functions
-  def find_instance(input)
-  # Look up a instance in this database using guid
-  #TODO: Extend this function to account for diffrent types of instance lookups
-  #TODO: Extend this to support function aliasing to database instances
-  #TODO: Prevent this function from returning guids that point to non-instances (e.g data)
-	
-  end
-  def write_db(file)
-	file << db_dump()
-  end
-  def init_database(parent)
+ def init_database(parent = nil)
 	parent.add_to_db(self) unless parent.nil?
 	@db = Hash.new()
 	@max_key = 0
@@ -146,11 +136,13 @@ module Database
   end
   def destroy_record_of_self()
   # Destroy the record of one's self in the containing db
-  	return db_parent.remove_from_db(self)
+  	db_parent.remove_from_db(self)
+	return self
   end
   def destroy_self
 	destroy_record_of_self
 	@db_alive = false
+	for_each_instance { |x| x.destroy_self }
 	return nil
   end
 ###################################################################
@@ -171,19 +163,26 @@ module Database
   # This function does object_id comparisons not equality so 
   # It will fail on find_key("mark") even if there is a "mark" in the db 
 	@db.each_pair { |k,val|	return k if val.object_id == input.object_id }
+	return nil
+  end
+  def [](ky)
+	return @db[ky];
   end
 ###################################################################
   def for_each_db_entry(&blk)
-	@db.each_value{|v| yield v}
+	@db.each_value{|v| yield v if !v.nil?}
   end
   def for_each_instance(&blk)
-	@db.each_value{|v| yield v if Database.is_database?(v)}
+	@db.each_value{|v| yield v if !v.nil? && Database.is_database?(v)}
   end
   def for_each_data(&blk)
-	@db.each_value{|v| yield v unless Database.is_database?(v)}
+	@db.each_value{|v| yield v unless !v.nil && !Database.is_database?(v)}
   end
   def db_dump?()
 	return true;
+  end
+  def write_db(file)
+	file << db_dump()
   end
   def db_dump()
   # db_dump:
@@ -191,8 +190,8 @@ module Database
   # Recursivly adds the sub data and instances in the context
 	this_db = REXML::Element.new 'instance'
 	this_db.add_attribute('GUID',@guid);
-	this_db.add_attribute('SID',@sid);
-	this_db.add_attribute('type','local');
+#	this_db.add_attribute('SID',@sid);
+#	this_db.add_attribute('type','local');
 	this_db.add_attribute('class',"#{self.class}");
 	for_each_data do |d|
 		this_db.add_element(Database.convert_to_data(d)) if Database.is_data?(d)
