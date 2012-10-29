@@ -9,7 +9,7 @@ class Thing
 	# and the value being either dynamically or statically defined
 	attr_reader :ASCII
 	def self.inherited(subclass)
-		puts "A New Thing: #{subclass}"
+		#puts "A New Thing: #{subclass}"
 	end	
 	def initialize(args = {})
 		@ASCII = '0'
