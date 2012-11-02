@@ -3,6 +3,9 @@ require 'pry'
 class Test_Database < Test
 	register_test :test_valid_tree
 	register_test :test_add_remove
+	def non_interactive?
+		return false
+	end
 	def tree3
 		g = TDB.new
 		2.times { g.add_to_db(TDB.new) }
