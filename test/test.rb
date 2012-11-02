@@ -18,8 +18,8 @@ class Test
 	@@test_func = {}
 	def self.register_test(*args)
 		args.each { |x| raise "register_test only accepts symbols" unless x.class <= Symbol }
-		@@test_func["#{self.class}"] = [] if @@test_func["#{self.class}"].nil?
-		args.each { |x| @@test_func["#{self.class}"] << x }	
+		@@test_func["#{self}"] = [] if @@test_func["#{self}"].nil?
+		args.each { |x| @@test_func["#{self}"] << x }	
 	end
 	def non_interactive?
 		return true
@@ -31,9 +31,9 @@ class Test
 	def self.run_test
 		it = self.new
 		puts "================ Testing using #{it.class} ================"
-		@@test_func["#{self.class}"].each do |x|
+		@@test_func["#{self}"].each do |x|
 			it.send(x)	
-		end if !@@test_func["#{self.class}"].nil?
+		end if !@@test_func["#{self}"].nil?
 		puts "================ Finished Testing          ================"
 		unless it.non_interactive?
 			it.enter_the_test_block

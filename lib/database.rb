@@ -84,7 +84,10 @@ module Database
   def self.read_db(xmlstring)	
   end
   def self.is_database?(input)
-	return true
+	return input.class.include?(Database) 
+  end
+  def self.is_data?(input)
+	return !is_database?(input)
   end
 ##%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%######
 ### Database Variables   ###########
@@ -125,9 +128,62 @@ module Database
 	target_db.add_to_db(self)
 	return self
   end
-
+###################################################################
+# Reference control functions
+	def add_reference(key,input_chain)
+	# A reference is added as a chain of object keys. it is stored as chain of keys strating from any database
+	# 
+		raise "Invalid key type. Key for Reference should be of type String, key is a #{key.class}" unless key.class <= String && key.to_i.to_s != key
+		@db[key] = Reference.new(input_chain) 
+		
+	end
+	def reference_of_reference(input,ref)
+	end
+#
+###################################################################
+#
+class Reference
+	attr_reader :start
+	attr_reader :chain
+	def initialize(input_chain)
+		raise "Invalid input_chain should be of class Array is of class #{input_chain.class}" unless input_chain <= Array
+		@start = input_chain.shift
+		raise "Not starting at a Database" unless @start.class.include? Database
+		local = @start
+		@chain = []
+		input.for_each do |this_key|
+			begin
+				local = local[this_key]
+				raise "This chain contains a deleted database" if Database.is_database?(local) and !local.db_alive?
+				@chain.push this_key
+			rescue
+				raise "Invalid key chain for creating a #{self.class}"
+			end
+		end
+	end
+	def resolve
+		local = @start
+		@chain.for_each do |k| 
+			return nil if !local.db_alive?
+			local = local[k]; 
+		end
+		return local
+	end
+	def what_died?
+		local = @start
+		@chain.for_each do |k| 
+			return local if !local.db_alive?
+			local = local[k]; 
+		end
+		return nil	
+	end
+end
+#
 ###################################################################
 # Instance db control functions
+ def db_alive?
+	return @db_alive
+ end 
  def init_database(parent = nil)
 	parent.add_to_db(self) unless parent.nil?
 	@db = Hash.new()
@@ -176,7 +232,7 @@ module Database
 	@db.each_value{|v| yield v if !v.nil? && Database.is_database?(v)}
   end
   def for_each_data(&blk)
-	@db.each_value{|v| yield v unless !v.nil && !Database.is_database?(v)}
+	@db.each_value{|v| yield v unless !v.nil? && !Database.is_database?(v)}
   end
   def db_dump?()
 	return true;
@@ -189,12 +245,14 @@ module Database
   # Returns the dump of this instances context as a REXML::Element
   # Recursivly adds the sub data and instances in the context
 	this_db = REXML::Element.new 'instance'
-	this_db.add_attribute('GUID',@guid);
+#	this_db.add_attribute('GUID',@guid);
 #	this_db.add_attribute('SID',@sid);
 #	this_db.add_attribute('type','local');
 	this_db.add_attribute('class',"#{self.class}");
+	this_db.add_attribute('key',"#{self.key}");
 	for_each_data do |d|
-		this_db.add_element(Database.convert_to_data(d)) if Database.is_data?(d)
+		this_db.add_element(d.to_s) if Database.is_data?(d)
+	#Database.convert_to_data(d)
 	end
 	for_each_instance do |i|
 		this_db.add_element(i.db_dump) if i.db_dump?()
