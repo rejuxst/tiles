@@ -128,6 +128,10 @@ module Database
 	target_db.add_to_db(self)
 	return self
   end
+  def delete_reference(input)
+	@db.delete(input) if input.class <= String
+	return self # TODO: Should this return the deleted object (like shift and pop would)?
+  end
 ###################################################################
 # Reference control functions
 	def add_reference(key,input_chain)
@@ -222,7 +226,8 @@ end
 	return nil
   end
   def [](ky)
-	return @db[ky];
+	return @db[ky] if ky.class <= Symbol
+	return @db[ky].resolve
   end
 ###################################################################
   def for_each_db_entry(&blk)
