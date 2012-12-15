@@ -48,18 +48,18 @@ def require_loop
 #	# end
 #	Dir.chdir(File.join("..",".."))
 
-require "game"
-require "map"
-require "tile"
-require "action"
-require "actor"
-require "game"
-require "nonactor"
-require "generic"
-require "player"
-require "thing"
-require "property"
-require "mixins/ncurses/ncurses_ui"
+	require "game"
+	require "map"
+	require "tile"
+	require "action"
+	require "actor"
+	require "game"
+	require "nonactor"
+	require "generic"
+	require "player"
+	require "thing"
+	require "property"
+	require "mixins/ncurses/ncurses_ui"
 end
 def require_from_source
 $LOAD_PATH << File.absolute_path(File.join(File.dirname(__FILE__),'/../../lib/'))
