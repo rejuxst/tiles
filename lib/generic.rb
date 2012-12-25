@@ -1,131 +1,69 @@
+require 'database'
 module Generic
-	module Extend
-
-		def self.inherited(subclass)
-			Respond_To::Respond_To_Tree.add_class_to_list(subclass)
-		end
-	end
 	module Base
 	#generic contains methods global to all instanciated objects
-		attr_accessor :owner, :things, :properties	
-		def giveto stuff
-			if !((stuff.constants.find {|s| s.contains "things"}) == nil)
-				owner.things.delete_if {|t| t == self} if !owner.nil?
-				@owner = stuff 
-				stuff<< self
-			else
-				raise "You are trying to give a #{self.class.to_s} to a #{self.class.to_s}"
-			end
-		end
-		def self.db_prop_add(*args)
-			args.each{ |p|
-				prop_s = p.to_s
-				Database::Global.add_to_definition(self,prop_s,:property)
-			}
-		end
-
-		def take item
-			if !item.owner.nil?
-				i = item.owner.things.delete(item)
-			end
-			item.owner = self
-			self.things << item
-			return self
-			raise "Can't take something that is not an item"
-		end
-		
-		def <<(stuff)
-			return take(stuff) if stuff.class <= Thing
-		end
-
-	end
-	module Respond_To
-	# Reserved symbols => :super, :all, :via, :default, :with, :using
-	# Reserved Actions => Action, Effect?
-		def self.included(base)
-			Respond_To_Tree.add_class_to_list(base)
-			class_str = "def self.class_responds_to(action,as,blk)
-					Generic::Respond_To::Respond_To_Tree.respond_to(self,action,as,blk)
-				end"
-			base.module_eval(class_str)
-		end 
-		def respond_to(action,as,blk) # Blk checks ned to be added blks need to be added as lambdas
-			raise "Block passed was not a lambda" if !(blk.class <= Proc) || blk.lambda? 
-			if action.class <= Action
-				action = eval(":#{action}")
-			else
-				unless action.class <= Symbol || action.class <= String
-					raise "Invalid Action type: #{action}" 
+	include Database
+		module Extentions
+			def add_properties(*args)
+				if @default_properties.nil?
+					@default_properties = super.default_properties rescue @default_properties = []
 				end
+				args.each do  |p|
+					@default_properties.push p
+				end
+				return nil
 			end
-			@respond_to = {} if @respond_to.nil?
-			@respond_to[action] = {} if @respond_to[action].nil?
-			@respond_to[action][as] = blk
+			def default_properties
+				return (@default_properties.nil?) ? [] : @default_properties
+			end
+		end
 
+	        def self.included(base)
+			base.extend Extentions
+		end
+	end
+	module Responsive
+		module Extensions
+		# @response is the class varible for response hash
+		# via : 
+		#
+			def add_response(to,type,response,options = {})
+			# add_response adds a response to an action to the calling class 
+			# to => the action that this class will respond to
+			# type => the category of interaction for this object (e.g :via, :using,:with,:target, etc.)
+			# response => the action/equation/effect to be processed
+			# options => additional options or information relavent to the process of calling  the response
+			#######
+			# Safety check on the inputs. 
+			to = "#{to}".downcase.to_sym
+			type = type.to_sym
+			raise "Invalid response cetegory for an reponse to an action" if type.nil? #TODO: Fix this if statement to cover the categories of action responses
+			@response = {} if @response.nil?
+			@response[to] = {} if @response[to].nil?
+			@response[to][type] = response
+			end
+			def response(action,as)
+				# Returns the effects of the response to an action
+				act_class = action
+				act_class = action.class unless action.is_a?(Class)
+				unless @response.nil? || @response["#{act_class}".downcase.to_sym].nil?
+					return @response["#{act_class}".downcase.to_sym][as] 
+				end
+				return self.superclass.response(action,as) rescue return nil
+			end
+		end
+	        def self.included(base)
+			base.extend Extensions
 		end
 		def response(action,as)
-			# action should be an Action inheritor and as should be :target, :via, :with, or :using
-			# (as can be a symbol or string). This will pass back a packaged action
-			return Respond_To_Tree.response(self.class,action,as) 		if @respond_to.nil?
-			return Respond_To_Tree.response(self.class,action,as)		if @respond_to[action].nil? && @respond_to[:unknown] == :super
-			as = :all													if !@respond_to[action][:all].nil?
-			case @respond_to[action][as].class
-				when Symbol	
-					return Respond_To_Tree.response(self.class,action,as)  	if @respond_to[action][as] == :super
-					return nil 												if @respond_to[action][as] == :none
-				when NilClass						# This item doesn't have a specific response check the class
-					return Respond_To_Tree.response(self.class,action,as) 
-				else
-					return @respond_to[action][as]	# compatability check should happen at the respond_to function
+			# Returns the effects of the response to an action
+			act_class = action
+			act_class = action.class unless action.is_a?(Class)
+			unless @response.nil? || @response["#{act_class}".downcase.to_sym].nil?
+				return @response["#{act_class}".downcase.to_sym][as] 
 			end
-				
+			return self.class.response(action,as)
 		end
-		class Respond_To_Tree
-			@@respond_to = {}
-			def self.add_class_to_list(inclass)
-				classname = :"#{inclass}"
-				@@respond_to[classname] = {:unknown => :super}
-				@@respond_to[classname][:action] 			= {}
-				@@respond_to[classname][:action][:with] 	= nil	# The response of this object to an Action :with self
-				@@respond_to[classname][:action][:target] 	= nil	# The response to an Action when self is the :target
-				@@respond_to[classname][:action][:via]	 	= nil	# The response to an Action when :target is reached :via self
-				@@respond_to[classname][:action][:all] 		= nil
-				@@respond_to[classname][:action][:using] 	= nil
-				@@respond_to[classname][:unknown] 			= :super # Respond to an unknown action with the response associated with its superclass
-
-			end
-			def self.get_tree
-				return @@respond_to
-			end
-			def self.response(inclass,action,as)
-				classname = :"#{inclass}"
-				action = :"#{action}"
-				as = :"#{as}"
-				return nil if inclass.superclass == Object.superclass	# This allows modifying Global Object response
-				return self.response(inclass.superclass,action,as) 	if @@respond_to[classname].nil?	# class doesn't exist
-				return self.response(inclass.superclass,action,as) 	if @@respond_to[classname][action].nil? && @@respond_to[classname][:unknown] == :super # action doesn't exist
-				as = :all	if !@@respond_to[action][:all].nil?
-				case @@respond_to[classname][action][as].class
-					when Symbol	
-						return self.response(inclass.superclass,action,as)	if @respond_to[action][as] == :super
-						return nil 											if @@respond_to[classname][action][as] == :none
-					when NilClass						# This item doesn't have a specific response check the superclass
-						return self.response(inclass.superclass,action,as)
-					else
-						return @@respond_to[classname][action][as]	# Checks should happen at the respond_to function
-				end
-			end
-			def self.has_response?(inclass)
-				classname = :"#{inclass}"
-				return true unless @@respond_to[classname].nil?
-				return false
-			end
-			def self.respond_to(inclass,action,as,blk)
-				action = :"#{action}"
-				self.add_class_to_list(inclass) unless self.has_response?(inclass)
-				@@respond_to[:"#{inclass}"][action] = {} if @@respond_to[:"#{inclass}"][action].nil?
-				@@respond_to[:"#{inclass}"][action][as] = blk
-			end
-		end
+		
 	end
 end

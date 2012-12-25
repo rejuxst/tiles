@@ -1,13 +1,10 @@
 require "generic"
 class Action
 	include Generic::Base
-	include Generic::Respond_To
+	include Generic::Responsive
 	attr_accessor :actor, :target
 	attr_accessor :path, :with, :using
 	attr_accessor :effects
-	def self.inherited(subclass)
-		Generic::Respond_To::Respond_To_Tree.add_class_to_list(subclass)
-	end
 	def initialize(args = {})
 		@effects = []
 		@actor = args[:actor]
@@ -58,10 +55,10 @@ class Action
 			return nil
 		end
 		begin
-		add_response(@using.response(@target.class,:using)) unless @using.nil?
-		@path.each{ |t| add_response(t.response(self.class,:via))	} unless @path.nil?
-		add_response(@target.response(@target.class,:target)) unless @target.nil?
-		add_response(@with.response(@target.class,:with)) unless @with.nil?
+		add_response(@using.response(self,:using)) unless @using.nil?
+		@path.each{ |t| add_response(t.response(self,:via))	} unless @path.nil?
+		add_response(@target.response(self,:target)) unless @target.nil?
+		add_response(@with.response(self,:with)) unless @with.nil?
 		rescue ActionRevaluate => action
 			return action.preform
 		rescue ActionCancel
@@ -75,31 +72,18 @@ class Action
 	def preform_pre_callback
 	
 	end
-	def get_tile(tile)
-		tile = tile.owner until tile.is_a? Tile
-		return tile
-	end
-	def self.get_tile(tile)
-		tile = tile.owner until tile.is_a? Tile
-		return tile
-	end
 	def add_response(response)
 		case 
-			when response.is_a?(Array)
-				@effects << response
-			when response.is_a?(Property::Effect)
-				@effects << response
-			when response.is_a?(Proc)
-				out = r.call(self)
+			when response.is_a?(Array) 		: @effects << response
+			when response.is_a?(Property::Effect) 	: @effects << response
+			when response.is_a?(Proc) 		: out = r.call(self)
 			when response.is_a?(Symbol)
 				case response
 					when :none
-					when :cancel
-						raise ActionCancel, "One of the components of the Action canceled it"
+					when :cancel : raise ActionCancel, "One of the components of the Action canceled it"
 					when :retry
 				end
-			when response == nil
-				return nil
+			when response == nil 			: return nil
 			else
 		end
 	end

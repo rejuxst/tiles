@@ -14,10 +14,10 @@ gem_original_require File.join(filedir,"app/players/human")
 # Initialize Game
 $thisgame = Crawl.new
 $thisgame.players << SuperHuman_DEBUG.new() #:ui => Ncurses::UI.new
-$thisgame.map.tile(10,10) << Actor.new(:ASCII => '@', :controller => $thisgame.players[0])
+$thisgame.map.tile(10,10).add_to_db Actor.new(:ASCII => '@', :controller => $thisgame.players[0])
 tt = Thing.new(:ASCII => 'X');
 tt.add_to_db Thing.new(:ASCII => '$')
-$thisgame.map.tile(1,1)  << tt
+$thisgame.map.tile(1,1).add_to_db tt
 
 #	sleep(2)
 #	Start Game

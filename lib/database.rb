@@ -94,7 +94,11 @@ module Database
   attr_reader :db_parent # The owner of this Database object, if nil this is the Master Database 
   attr_reader :key	 # The Key for this database within the db_parent
   attr_reader :max_key	 # The total number of assigned keys (@max-key-1 is last assigned key) @max_key is next assignable key
-  attr_reader :db	 # The storage array for the database
+#  attr_reader :db	 # The storage array for the database
+  def db
+	@db = {} if @db.nil?
+	return @db
+  end
   attr_reader :db_alive  # This is a status flag to prevent references from resolving dead pointers 
 ###################################
 ## Database Transactions ##########
@@ -185,6 +189,9 @@ end
 #
 ###################################################################
 # Instance db control functions
+ def db_empty?
+	return @db.empty? rescue return true
+ end
  def db_alive?
 	return @db_alive
  end 
@@ -212,32 +219,39 @@ end
   def assign_key(input)
 	@max_key = @max_key + 1
 	return :"#{@max_key-1}"
+  rescue 
+	init_database
+	retry
   end
   def set_key(key_val,parent)
 	@key = key_val
 	@db_parent = parent
+  end
+  def find_if(&blk)
+	for_each_db_entry { |v| return v if yield v } 
+	return nil
   end
   def find_key(input)   
   # Find key assumes that if your calling this input is 
   # not a database (though it will work if it is its just slow)
   # This function does object_id comparisons not equality so 
   # It will fail on find_key("mark") even if there is a "mark" in the db 
-	@db.each_pair { |k,val|	return k if val.object_id == input.object_id }
+	db.each_pair { |k,val|	return k if val.object_id == input.object_id }
 	return nil
   end
   def [](ky)
-	return @db[ky] if ky.class <= Symbol
-	return @db[ky].resolve
+	return db[ky] if ky.class <= Symbol
+	return db[ky].resolve
   end
 ###################################################################
   def for_each_db_entry(&blk)
-	@db.each_value{|v| yield v if !v.nil?}
+	db.each_value{|v| yield v if !v.nil?}
   end
   def for_each_instance(&blk)
-	@db.each_value{|v| yield v if !v.nil? && Database.is_database?(v)}
+	db.each_value{|v| yield v if !v.nil? && Database.is_database?(v)}
   end
   def for_each_data(&blk)
-	@db.each_value{|v| yield v unless !v.nil? && !Database.is_database?(v)}
+	db.each_value{|v| yield v unless !v.nil? && !Database.is_database?(v)}
   end
   def db_dump?()
 	return true;
