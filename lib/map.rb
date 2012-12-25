@@ -2,7 +2,7 @@ require "generic"
 require "active"
 class Map
 	include Generic::Base
-	include Generic::Respond_To
+	include Generic::Responsive
 	include Active
 	attr_reader :rows,:columns # number of rows and columns of tiles in the map
 	attr_reader :parent, :maps # list of lower level maps

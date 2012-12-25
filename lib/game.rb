@@ -4,7 +4,7 @@ require "active"
 require 'database'
 class Game
 	include Generic::Base
-	include Generic::Respond_To
+	include Generic::Responsive
 	include Active
 	include Database
 	attr_accessor :map, :things, :players, :views
@@ -43,8 +43,8 @@ class Game
 			if t.class <= Actor && t.turn == turn	# Check current
 				t.take_turn if t.controller.nil?
 			end
-			if !t.things.nil? 			# Recursion to items things
-				t.things.each {|q| y.call(q,&y)}
+			if !t.db_empty? 			# Recursion to items things
+				t.for_each_instance {|q| y.call(q,&y)}
 			end
 		end
 		mapproc = Proc.new() do |t,&y|			# Recursive actor check
@@ -54,9 +54,9 @@ class Game
 			if !t.maps.nil?					  # Recursion to submaps
 				t.maps.each {|q| y.call(q,&y)}
 			end
-			t.things { |t| turnproc.call(t,&turnproc) }	# check the things
+			t.for_each_db_entry { |t| turnproc.call(t,&turnproc) }	# check the things
 			# check the tiles (:tiles => tiles[:column] => tile.things)
-			t.tiles.each { |ti| ti.each { |t2| t2.things.each { |t3| turnproc.call(t3,&turnproc)}}}
+			t.tiles.each { |ti| ti.each { |t2| t2.for_each_instance { |t3| turnproc.call(t3,&turnproc)}}}
 		end
 		@things.each { |b| print(b)}
 		@things.each { |t| turnproc.call(t,&turnproc) }# Find all the things in the main map

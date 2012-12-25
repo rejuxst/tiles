@@ -15,5 +15,6 @@ rescue
 	binding.pry
 end
 begin
+	require_from_source
 	binding.pry
 end

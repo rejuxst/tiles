@@ -44,13 +44,13 @@ end
 		def render_mainwindow
 			$thisgame.map.rows.times do |x|
 				$thisgame.map.columns.times do |y|
-					if	$thisgame.map.tile(x,y).things.length == 0
+					if	$thisgame.map.tile(x,y).db_empty?
 						Ncurses.setpos(x,y)
 						Ncurses.addstr("#{($thisgame.map.tile(x,y)).ASCII}")
 						#Ncurses.mvaddstr(x, y, "#{($thisgame.map.tile(x,y)).ASCII}") 
 					else
-						actors = $thisgame.map.tile(x,y).things.find {|t| t.class <= Actor}
-						c = $thisgame.map.tile(x,y).things[0]
+						actors = $thisgame.map.tile(x,y).find_if {|t| t.class <= Actor}
+						c = $thisgame.map.tile(x,y).find_if { |t| true }
 						c = actors if !actors.nil? 
 						#Ncurses.mvaddstr(x, y, "#{c.ASCII}") 
 						Ncurses.setpos(x,y)

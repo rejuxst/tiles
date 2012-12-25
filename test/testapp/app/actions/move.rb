@@ -12,7 +12,7 @@ class Move < Action
 		self.move_over_one(source,1,0)
 	end
 	def self.move_over_one(source,x,y)
-		stile = get_tile(source)
+		stile = source.db_parent
 		return nil if stile.offset(x,y).nil?
 		m = Move.new({:actor => source, :path => [stile, stile.offset(x,y)],:target=>stile.offset(x,y)})
 		return m.preform
@@ -20,13 +20,13 @@ class Move < Action
 	def init
 	end
 	def preform_pre_callback
-		raise ActionCancel, :invalid if get_tile(@actor) == get_tile(@target)
+		raise ActionCancel, :invalid if @actor.db_parent == @target.db_parent
 	end
 	def calculate
 		if !@target.is_a? Tile
 			@target = @target.owner until @target.is_a? Tile
 		end
-		@target.take @actor
+		@actor.move_self_to_db @target
 		
 	end
 end

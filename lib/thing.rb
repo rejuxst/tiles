@@ -3,8 +3,7 @@ require "generic"
 require "database"
 class Thing
 	include Generic::Base
-	include Generic::Respond_To
-	include Database
+	include Generic::Responsive
 	# hash of all applicable state information with the key being an element on the definition database
 	# and the value being either dynamically or statically defined
 	attr_reader :ASCII

@@ -9,6 +9,7 @@ class Dungeon < Map
 			e = Array.new(@columns) do |e1|
 				e1 =p[r][c].new(:owner => self)
 				c += 1
+				add_to_db e1
 				next e1	
 			end
 			r += 1
