@@ -138,53 +138,64 @@ module Database
   end
 ###################################################################
 # Reference control functions
-	def add_reference(key,input_chain)
+	def add_reference(key,collection,blk = nil)
 	# A reference is added as a chain of object keys. it is stored as chain of keys strating from any database
 	# 
 		raise "Invalid key type. Key for Reference should be of type String, key is a #{key.class}" unless key.class <= String && key.to_i.to_s != key
-		@db[key] = Reference.new(input_chain) 
+		@db[key] = Reference.new(self,collection,true,blk) 
 		
 	end
-	def reference_of_reference(input,ref)
+	def add_reference_chain(key,chain,blk = nil)
+		raise "Invalid key type. Key for Reference should be of type String, key is a #{key.class}" unless key.class <= String && key.to_i.to_s != key
+		@db[key] = Reference.new(self,chain,false,blk) 
+
 	end
 #
 ###################################################################
 #
 class Reference
-	attr_reader :start
-	attr_reader :chain
-	def initialize(input_chain)
-		raise "Invalid input_chain should be of class Array is of class #{input_chain.class}" unless input_chain <= Array
-		@start = input_chain.shift
-		raise "Not starting at a Database" unless @start.class.include? Database
-		local = @start
-		@chain = []
-		input.for_each do |this_key|
-			begin
-				local = local[this_key]
-				raise "This chain contains a deleted database" if Database.is_database?(local) and !local.db_alive?
-				@chain.push this_key
-			rescue
-				raise "Invalid key chain for creating a #{self.class}"
+	#VALID_REFERENCE_CLASSES = [String Class]
+	@@valid_reference_classes = [String, Class]
+	def initialize(source,chain,is_collection,blk = nil)
+		# Input validatino checks
+		raise "Source location is not a Database Reference cannot be generated" if Database.is_database?(source)
+		@start = source
+		@proc = blk
+		@is_collection = is_collection
+		chain.each do |ele|
+			if !@@valid_reference_classes.any? { |cl| ele.is_a? cl }
+				raise "Input Reference chain must contain a valid Reference Object" 
 			end
+		end unless @is_collection
+		if chain.is_a? Array
+			@target = []
+			chain.each { |ele| @target.unshift ele }
+		else
+			@target = chain	
 		end
 	end
 	def resolve
-		local = @start
-		@chain.for_each do |k| 
-			return nil if !local.db_alive?
-			local = local[k]; 
+		return @target if @is_collection
+		local = [@start]
+		@target.each do |k| 
+			return nil if local.any?{|l| !l.db_alive? }
+			local = local.collect { |c_db| c_db[k].resolve }; 
 		end
+		return local.collect { |c_ref| c_ref.resolve } if local.is_a? Reference
 		return local
 	end
 	def what_died?
-		local = @start
-		@chain.for_each do |k| 
-			return local if !local.db_alive?
-			local = local[k]; 
+		return nil if @is_collection
+		local = [@start]
+		@target.each do |k| 
+			return local if local.any?{|l| !l.db_alive? }
+			local = local.collect { |c_db| c_db[k].resolve }; 
 		end
-		return nil	
+		return local.collect { |c_ref| c_ref.what_died? } if local.is_a? Reference
+		return nil
+
 	end
+
 end
 #
 ###################################################################
@@ -264,9 +275,7 @@ end
   # Returns the dump of this instances context as a REXML::Element
   # Recursivly adds the sub data and instances in the context
 	this_db = REXML::Element.new 'instance'
-#	this_db.add_attribute('GUID',@guid);
-#	this_db.add_attribute('SID',@sid);
-#	this_db.add_attribute('type','local');
+	this_db.add_attribute('type','local');
 	this_db.add_attribute('class',"#{self.class}");
 	this_db.add_attribute('key',"#{self.key}");
 	for_each_data do |d|
