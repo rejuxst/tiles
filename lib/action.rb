@@ -39,8 +39,7 @@ class Action
 			when Thing
 			when Array
 			when Hash
-			else
-				raise "This is not a compatible type for Action.using"
+			else	raise "This is not a compatible type for Action.using"
 		end
 		return self
 	end
@@ -49,22 +48,16 @@ class Action
 		return self
 	end
 	def preform
-		begin
-			preform_pre_callback
-		rescue ActionCancel
-			return nil
-		end
-		begin
+		preform_pre_callback
 		add_response(@using.response(self,:using)) unless @using.nil?
 		@path.each{ |t| add_response(t.response(self,:via))	} unless @path.nil?
 		add_response(@target.response(self,:target)) unless @target.nil?
 		add_response(@with.response(self,:with)) unless @with.nil?
-		rescue ActionRevaluate => action
-			return action.preform
-		rescue ActionCancel
-			return nil
-		end
 		return calculate
+	rescue ActionRevaluate => action
+		return action.preform
+	rescue ActionCancel
+		return nil
 	end
 	def calculate
 	
@@ -73,17 +66,17 @@ class Action
 	
 	end
 	def add_response(response)
-		case 
-			when response.is_a?(Array) 		: @effects << response
-			when response.is_a?(Property::Effect) 	: @effects << response
-			when response.is_a?(Proc) 		: out = r.call(self)
-			when response.is_a?(Symbol)
+		case response
+			when Array 		then	@effects << response
+			when Property::Effect	then	@effects << response
+			when Proc 		then 	out = r.call(self)
+			when Symbol
 				case response
 					when :none
-					when :cancel : raise ActionCancel, "One of the components of the Action canceled it"
+					when :cancel	then raise ActionCancel, "One of the components of the Action canceled it"
 					when :retry
 				end
-			when response == nil 			: return nil
+			when NilClass 		then	return nil
 			else
 		end
 	end
