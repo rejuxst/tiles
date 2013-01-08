@@ -1,8 +1,7 @@
 require 'pry'
-
-class Test_Database < Test
-	register_test :test_valid_tree
-	register_test :test_add_remove
+#require 'test/unit'
+class Test_Database < Tiles_Test
+	attr_accessor :t3
 	def non_interactive?
 		return false
 	end
@@ -22,73 +21,108 @@ class Test_Database < Test
 		tree.for_each_instance { |e| print_tree(e,tablvl+1)}
 		return nil
 	end
-	def test_add_remove
-		puts "Testing add_to_db and remove_from_db"
+	def test_add
 		t3 = tree3
 		list = []
 		list << t3
-		t3.for_each_db_entry { |e| list << e }
-		t3.for_each_db_entry { |e| e.for_each_db_entry { |f| list << f} }
-		t3.for_each_db_entry { |e| e.for_each_db_entry { |f|   f.for_each_db_entry { |g| list << g} } }
+		begin
+			t3.for_each_db_entry { |e| list << e }
+			t3.for_each_db_entry { |e| e.for_each_db_entry { |f| list << f} }
+			t3.for_each_db_entry { |e| e.for_each_db_entry { |f|   f.for_each_db_entry { |g| list << g} } }
+		end rescue assert(false, "Failed to correctly generate assertion list") and return false
 		# Size check: add_to_db works
-		if(list.length == 15)
-			puts "\tCorrect number of elements in a binary tree depth 3 (which is 15): pass"
-		else
-			raise "Incorrect number of element in binary tree of depth 3 #{list.length}: fail"
-		end
-		# Singular destruction: destroy_self on leaf Database works
+		assert_equal(15,list.length, "Expected 15 elements in the Tree")
+		return list
+	end
+	def test_remove
+		list = test_add
 		list[7].destroy_self
 		sum = 0
 		list.each { |l| sum = sum +1 if l.db_alive } 
-		puts "\tTesting singular delete: #{(!list[7].db_alive && sum == 14) ? "pass" : "fail" }"
+		assert(!list[7].db_alive && sum == 14 , "Failed on Destruction of a Database Leaf node")
 		# Singluar Destruction: Destroy a branch
 		list[4].destroy_self
 		sum = 0
 		list.each { |l| sum = sum +1 if l.db_alive } 
-		puts "\tTesting branch delete: #{(!list[7].db_alive && sum == 11 && !list[4].db_alive && !list[9].db_alive && !list[10].db_alive) ? "pass" : "fail" }"
+		first_test = !list[7].db_alive && sum == 11 && !list[4].db_alive && !list[9].db_alive && !list[10].db_alive
+		assert(first_test , "Failed to correctly destroy a branch" )
 		# Singluar Destruction: Destroy a nested branch
 		list[2].destroy_self
 		sum = 0
 		list.each { |l| sum = sum +1 if l.db_alive } 
-		large_pass = sum == 4 && !list[7].db_alive && !list[4].db_alive && !list[9].db_alive && !list[10].db_alive &&  !list[5].db_alive 
-		large_pass = large_pass && !list[6].db_alive &&  !list[11].db_alive &&  !list[12].db_alive && !list[13].db_alive && !list[14].db_alive
-		puts "\tTesting large branch delete: #{(large_pass)? "pass" : "fail" }"
+		large_pass = [4,5,6,7,9,10,11,12,13,14].all?{ |n| !list[n].db_alive?} && sum == 4
+		assert(large_pass, "Large Branch Deletion Failed")
 	rescue
 		binding.pry
 	end
 	def valid_parent_child(par,chd)
-		return (chd.db_parent == par && par[chd.key] == chd && par.find_key(chd) == chd.key)? true : false
+		assert(chd.db_parent == par && par[chd.key] == chd && par.find_key(chd) == chd.key, "Invalid Database Parent Child Relationship" )
 	end
 	def test_valid_tree
-		puts "Test if Tree depth 3 is a valid databse tree: #{(rec_test_valid_tree(tree3()))? "pass": "fail" }"
+		rec_valid_tree tree3()
 	end
-	def rec_test_valid_tree(tree)
+	def rec_valid_tree(tree)
 		valid = true
 		tree.for_each_instance do |x| 
-			valid = valid && valid_parent_child(tree,x)
-			valid = valid && rec_test_valid_tree(x) 
+			valid_parent_child(tree,x)
+			rec_valid_tree(x) 
 		end
 		return valid
 	end
+	def test_add_basic_reference
+		base = TDB.new
+		element = TDB.new
+		base.add_to_db(element)
+		base.add_reference("element",element)
+		assert_same(element,base["element"], "Unable to Sucessfully Generate a Local Reference")
+	end
+	def test_dead_basic_reference
+		base = TDB.new
+		element = TDB.new
+		base.add_to_db(element)
+		base.add_reference("element",element)
+		element.destroy_self
+		assert_nil(base["element"], "This should be Nil as the Database has been killed")
+	end
+	def test_reference_of_reference
+		base = TDB.new
+		element = TDB.new
+		object = TDB.new
+		weapon = TDB.new
+		base.add_to_db element
+		base.add_to_db object
+		object.add_to_db weapon
+		element.add_reference("db_parent",element.db_parent)
+		base.add_reference("object",object)
+		object.add_reference("weapon",weapon)
+		element.add_reference_chain("double",["db_parent", "object", "weapon"])
+		assert_same(element["double"],weapon, "Reference of Reference does not work")	
+	end
+	def test_dead_reference_of_reference
+		base = TDB.new
+		element = TDB.new
+		object = TDB.new
+		weapon = TDB.new
+		base.add_to_db element
+		base.add_to_db object
+		object.add_to_db weapon
+		element.add_reference("db_parent",element.db_parent)
+		base.add_reference("object",object)
+		object.add_reference("weapon",weapon)
+		object.destroy_self
+		element.add_reference_chain("double",["db_parent", "object", "weapon"])
+		assert_nil(element["double"], "Reference of Reference should have died")	
+		assert(element["db_parent"].db_alive?, "This Reference should not have died")	
+	end
 	###########
-	#require_from_source    # Load the Tiles Core (Syntax Test Bench)
 	class TDB 
 		include ::Database
 		def initialize()
 			init_database
 		end
+		def inspect
+			"#<#{self.class}:#{object_id}>"
+		end
+
 	end
-#begin
-#	#create_global_database
-#	#5.times {|x| create_global(TDB.new) }
-#	puts "============ Testing Database module ====================="
-#	test_valid_tree
-#	test_add_remove
-#	puts "============ Finished Testing ====================="
-#	unless non_interactive? # Alias global to local
-#		binding.pry
-#	end
-#rescue
-#	binding.pry
-#end
 end

@@ -1,3 +1,4 @@
+require 'pry'
 require 'rexml/document'
 require 'rexml/element'
 module Database
@@ -89,6 +90,22 @@ module Database
   def self.is_data?(input)
 	return !is_database?(input)
   end
+  def self.add_database_entry_class(the_class,&blk)
+	raise "This is not a class input is an instance of #{the_class.class}" unless the_class.is_a? Class
+	#TODO: Add check for the ability to covert to and from a string	
+	#TODO: Check that the block accepts the database and the key
+	@database_entry_types = {} if @database_entry_types.nil? 
+	@database_entry_types[the_class] = blk  
+  end
+  def self.[](the_class)
+	return @database_entry_types[the_class] rescue nil
+  end
+#####################################
+### General Setup ##################
+self.add_database_entry_class(Class) { |ky| @db[ky].resolve }
+self.add_database_entry_class(Symbol) { |ky| @db[ky] }
+self.add_database_entry_class(String) { |ky| @db[ky].resolve }
+##################################### 
 ##%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%######
 ### Database Variables   ###########
   attr_reader :db_parent # The owner of this Database object, if nil this is the Master Database 
@@ -103,8 +120,8 @@ module Database
 ###################################
 ## Database Transactions ##########
 # NOTE: All database transations should return self unless destructive 
-  def add_to_db(input)
-	the_key = assign_key(input)
+  def add_to_db(input,key = nil)
+	the_key = (key.nil?) ? assign_key(input) : key
 	@db[the_key] = input
 	input.set_key(the_key,self) if Database.is_database?(input)
 	return self
@@ -142,23 +159,28 @@ module Database
 	# A reference is added as a chain of object keys. it is stored as chain of keys strating from any database
 	# 
 		raise "Invalid key type. Key for Reference should be of type String, key is a #{key.class}" unless key.class <= String && key.to_i.to_s != key
-		@db[key] = Reference.new(self,collection,true,blk) 
+
+		#@db[key] = Reference.new(self,collection,true,blk) 
+		add_to_db Reference.new(self,collection,true,blk) , key
 		
 	end
 	def add_reference_chain(key,chain,blk = nil)
 		raise "Invalid key type. Key for Reference should be of type String, key is a #{key.class}" unless key.class <= String && key.to_i.to_s != key
-		@db[key] = Reference.new(self,chain,false,blk) 
+		#@db[key] = Reference.new(self,chain,false,blk) 
+		add_to_db Reference.new(self,chain,false,blk),key 
 
 	end
 #
 ###################################################################
 #
 class Reference
-	#VALID_REFERENCE_CLASSES = [String Class]
 	@@valid_reference_classes = [String, Class]
+	def self.add_valid_reference_class(the_class)
+		raise "Not a class #{the_class.class}" if not the_class.is_a? Class
+	end
 	def initialize(source,chain,is_collection,blk = nil)
 		# Input validatino checks
-		raise "Source location is not a Database Reference cannot be generated" if Database.is_database?(source)
+		raise "Source location is not a Database Reference cannot be generated" if !Database.is_database?(source)
 		@start = source
 		@proc = blk
 		@is_collection = is_collection
@@ -169,19 +191,26 @@ class Reference
 		end unless @is_collection
 		if chain.is_a? Array
 			@target = []
-			chain.each { |ele| @target.unshift ele }
+			chain.each { |ele| @target.push ele }
 		else
 			@target = chain	
 		end
 	end
+	def validate_target
+		if Database.is_database?(@target)
+			@target = nil	if !@target.db_alive?
+		end
+		return @target
+	end
 	def resolve
-		return @target if @is_collection
+		return validate_target if @is_collection
 		local = [@start]
 		@target.each do |k| 
-			return nil if local.any?{|l| !l.db_alive? }
-			local = local.collect { |c_db| c_db[k].resolve }; 
+			return nil if local.any?{|l| !Database.is_database?(l) || !l.db_alive? }
+			local = local.collect { |c_db| c_db[k] }; 
 		end
 		return local.collect { |c_ref| c_ref.resolve } if local.is_a? Reference
+		return local[0] if local.is_a? Array and local.length == 1
 		return local
 	end
 	def what_died?
@@ -195,8 +224,19 @@ class Reference
 		return nil
 
 	end
+	class Collection < Reference
+		def initialize(source,collected,blk = nil)
+			raise "Source location is not a Database Reference cannot be generated" if !Database.is_database?(source)
+			@start = source
+			@proc = blk
+			collected.each do |item|
+				raise "Invalid Item to Reference in a collection" if Database.is_database?(item) && item.db_parent.object_id != @start.object_id
+			end
+		end
+	end
 
 end
+
 #
 ###################################################################
 # Instance db control functions
@@ -251,8 +291,7 @@ end
 	return nil
   end
   def [](ky)
-	return db[ky] if ky.class <= Symbol
-	return db[ky].resolve
+	return instance_exec ky, &Database[ky.class]
   end
 ###################################################################
   def for_each_db_entry(&blk)
