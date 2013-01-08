@@ -67,17 +67,16 @@ class Action
 	end
 	def add_response(response)
 		case response
-			when Array 		then	@effects << response
-			when Property::Effect	then	@effects << response
-			when Proc 		then 	out = r.call(self)
-			when Symbol
-				case response
-					when :none
-					when :cancel	then raise ActionCancel, "One of the components of the Action canceled it"
-					when :retry
-				end
-			when NilClass 		then	return nil
-			else
+		when Array 		then	@effects << response
+		when Proc 		then 	out = r.call(self)
+		when Symbol
+			case response
+			when :none
+			when :cancel	then raise ActionCancel, "One of the components of the Action canceled it"
+			when :retry
+			end
+		when NilClass 		then	return nil
+		else
 		end
 	end
 	class ActionCancel < StandardError
