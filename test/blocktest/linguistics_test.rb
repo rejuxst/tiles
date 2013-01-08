@@ -1,6 +1,5 @@
 require 'pry'
-class Test_Linguistics < Test
-	register_test :load_bare_linguisitics
+class Test_Linguistics < Tiles_Test
 	def add_to_dict(word,wordclass)
 		$dictionary = {} if $dictionary.nil?
 		$dictionary[word] = wordclass
@@ -47,21 +46,11 @@ class Test_Linguistics < Test
 	rescue 
 		binding.pry
 	end
-	def load_bare_linguisitics
+	def test_load_bare_linguisitics
 		load_test_word_classes # Load the Word Classes (Word Class Test Bench)
 		load_test_word_lib     # Load the Library    (Word / Connector Test Bench)
 		load_test_sentences    # Load Test Sentences (Sentence Parsing Test Bench)	
+	rescue
+		assert(false,"Failed Linguistics test")
 	end
 end
-#begin
-#	require_from_source    # Load the Tiles Core (Syntax Test Bench)
-#	load_bare_linguisitics
-#	load_test_word_classes # Load the Word Classes (Word Class Test Bench)
-#	load_test_word_lib     # Load the Library    (Word / Connector Test Bench)
-#	load_test_sentences    # Load Test Sentences (Sentence Parsing Test Bench)
-#	unless non_interactive? # Alias global to local
-#		binding.pry
-#	end
-#rescue
-#	binding.pry
-#end
