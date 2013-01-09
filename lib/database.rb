@@ -97,14 +97,17 @@ module Database
 	@database_entry_types = {} if @database_entry_types.nil? 
 	@database_entry_types[the_class] = blk  
   end
+  def self.is_database_entry_class?(the_class)
+	@database_entry_types.any?{|key,val| key == the_class}
+  end
   def self.[](the_class)
 	return @database_entry_types[the_class] rescue nil
   end
 #####################################
 ### General Setup ##################
-self.add_database_entry_class(Class) { |ky| @db[ky].resolve }
+self.add_database_entry_class(Class) { |ky|  @db[ky].nil?() ? nil : @db[ky].resolve }
 self.add_database_entry_class(Symbol) { |ky| @db[ky] }
-self.add_database_entry_class(String) { |ky| @db[ky].resolve }
+self.add_database_entry_class(String) { |ky| @db[ky].nil?() ? nil : @db[ky].resolve }
 ##################################### 
 ##%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%######
 ### Database Variables   ###########
@@ -156,21 +159,19 @@ self.add_database_entry_class(String) { |ky| @db[ky].resolve }
   end
 ###################################################################
 # Reference control functions
-	def add_reference(key,collection,blk = nil)
-	# A reference is added as a chain of object keys. it is stored as chain of keys strating from any database
-	# 
-		raise "Invalid key type. Key for Reference should be of type String, key is a #{key.class}" unless key.class <= String && key.to_i.to_s != key
-
-		#@db[key] = Reference.new(self,collection,true,blk) 
-		add_to_db Reference.new(self,collection,true,blk) , key
-		
+def add_reference(key,target,blk = nil)
+# A reference is added as a chain of object keys. it is stored as chain of keys strating from any database 
+	unless key.class <= String && key.to_i.to_s != key
+		raise "Invalid key type. Key for Reference should be of type String, key is a #{key.class}" 
 	end
-	def add_reference_chain(key,chain,blk = nil)
-		raise "Invalid key type. Key for Reference should be of type String, key is a #{key.class}" unless key.class <= String && key.to_i.to_s != key
-		#@db[key] = Reference.new(self,chain,false,blk) 
-		add_to_db Reference.new(self,chain,false,blk),key 
-
+	add_to_db Reference.new(self,target) , key
+end
+def add_reference_chain(key,chain,blk = nil)
+	unless key.class <= String && key.to_i.to_s != key
+		raise "Invalid key type. Key for Reference should be of type String, key is a #{key.class}" 
 	end
+	add_to_db Reference::Chain.new(self,chain),key 
+end
 #
 ###################################################################
 ###################################################################
