@@ -3,14 +3,19 @@ require 'test/unit'
 def require_from_source
 	$LOAD_PATH << File.absolute_path(File.join(File.dirname(__FILE__),'/../lib/'))
 	core = File.join(File.dirname(__FILE__),"..","lib")
-	#puts "$LOAD_PATH LIST:"
-	#puts $LOAD_PATH
 	Dir.open(core) do |ent|
 		ent.entries.each do |f|
-		unless File.directory?(File.join(core,f)) || !(f.match(/\.gitignore/).nil?) || !(f.match(/\.swp/).nil?)
+		begin
 			succ = gem_original_require File.expand_path File.join(ent.to_path,f.partition('.')[0])
-		end
-		end
+		rescue Exception => e 
+			raise <<-EOF
+Failed to load file correctly #{File.join(ent.to_path,f.partition('.')[0])} : 
+=> #{e}
+#{e.backtrace.join("\n")} 
+			EOF
+		end unless File.directory?(File.join(core,f)) || !(f.match(/\.gitignore/).nil?) || !(f.match(/\.swp/).nil?)
+		end 
+
 	end
 rescue
 	binding.pry
@@ -31,7 +36,5 @@ begin
 	ARGV.each do |block|
 		puts "================ Testing #{block} ================"
 		require blkt +'/'+ block.downcase + "_test.rb"
-		#eval('Test_' + block + '.run_test')
-		#puts "================ Finished #{block} ================"
 	end
 end

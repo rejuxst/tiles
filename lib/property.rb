@@ -7,14 +7,14 @@ class Property
 		@values[name] = {:class => value_class}
 	end
 	def self.values
-	#TODO: Scure this function
+	#TODO: Secure this function
 		return @values.nil? ? {} : @values
 	end
 	def initialize
 		init_database
-		self.class.values.each_pair do |ky,val|	
-			key = add_to_db(val[:class].new)
-			add_reference key,ky	
+		self.class.values.each_pair do |name,params|	
+			key = add_to_db(params[:class].new)
+			add_reference name,ky	
 		end
 	end
 end

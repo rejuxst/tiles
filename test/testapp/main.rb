@@ -1,9 +1,6 @@
 require 'pry'
 def run
-#puts __FILE__
-#puts Dir.pwd()
 filedir = File.dirname(File.absolute_path(__FILE__))
-#File.dirname(File.join(Dir.pwd(),__FILE__))
 gem_original_require File.join(filedir,"app/maps/dungeon") #"app/maps/dungeon"
 gem_original_require File.join(filedir,"app/games/crawl")
 gem_original_require File.join(filedir,"app/tiles/ground")
@@ -30,42 +27,13 @@ print "Waiting for input to close\n"
 #Ncurses.close_screen
 puts $thisgame.players if $thisgame.class <= Game
 binding.pry
-#	tt.db_dump.write()
-end
 
-def require_loop
-#	@oldobj = Object.constants().sort
-#	Dir.chdir(File.join("lib","core"))
-#	core = Dir.new(".")
-#	core.each do |f|
-#		unless File.directory?(File.join(f)) || !(f.match(/\.gitignore/).nil?)
-#			succ = require File.join(f.partition('.')[0])
-#			#puts "Requiring lib file: #{File.join(f.partition('.')[0])} => #{succ}"
-#		end
-#	end
-#	# Object.constants().sort.each do |const|
-#		 # puts const unless const.is_a?(Array)||!@oldobj.index(const).nil?
-#	# end
-#	Dir.chdir(File.join("..",".."))
-
-	require "game"
-	require "map"
-	require "tile"
-	require "action"
-	require "actor"
-	require "game"
-	require "nonactor"
-	require "generic"
-	require "player"
-	require "thing"
-	require "property"
-	require "mixins/ncurses/ncurses_ui"
 end
 def require_from_source
 $LOAD_PATH << File.absolute_path(File.join(File.dirname(__FILE__),'/../../lib/'))
 core = File.join(File.dirname(__FILE__),"..","..","lib")
-puts "$LOAD_PATH LIST:"
-puts $LOAD_PATH
+#puts "$LOAD_PATH LIST:"
+#puts $LOAD_PATH
 Dir.open(core) do |ent|
 	ent.entries.each do |f|
 	unless File.directory?(File.join(core,f)) || !(f.match(/\.gitignore/).nil?) || !(f.match(/\.swp/).nil?)
@@ -77,11 +45,9 @@ end
 rescue 
 	binding.pry
 end
-
+### MAIN LOOP ###
 begin
-
-require_from_source
-#require_loop
-require 'mixins/ncurses/ncurses_ui'
-run
+	require_from_source
+	require 'mixins/ncurses/ncurses_ui'
+	run
 end
