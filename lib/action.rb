@@ -1,21 +1,16 @@
 require "generic"
+require 'pry'
 class Action
 	include Generic::Base
 	include Generic::Responsive
-	attr_accessor :actor, :target
-	attr_accessor :path, :with, :using
-	attr_accessor :effects
-	def initialize(args = {})
-		@effects = []
-		@actor = args[:actor]
-		@target = args[:target]
-		@with = args[:with]
-		@using = args[:using]
-		via args[:path]
-		init
-	end
-	def init
-	
+	def init(args = {})
+		args = args[0] if args.is_a? Array
+		effects = []
+		from(args[:actor])
+		on(args[:target])
+		with(args[:with])
+		using(args[:using])
+		via(args[:path])
 	end
 	def via path
 		@path = []
@@ -27,32 +22,27 @@ class Action
 		return self
 	end
 	def from(actor)
-		@actor = actor
-	end
-	def with with
-		@with = with
+		add_reference("actor",actor)
 		return self
 	end
-	def using use
-		case use.class
-			when NilClass
-			when Thing
-			when Array
-			when Hash
-			else	raise "This is not a compatible type for Action.using"
-		end
+	def with(with)
+		add_reference("with",with)
+		return self
+	end
+	def using(use)
+		add_reference("use",use)
 		return self
 	end
 	def on target
-		@target = target
+		add_reference("target",target)
 		return self
 	end
 	def preform
 		preform_pre_callback
-		add_response(@using.response(self,:using)) unless @using.nil?
+		add_response(self["using"].response(self,:using)) unless @using.nil?
 		@path.each{ |t| add_response(t.response(self,:via))	} unless @path.nil?
-		add_response(@target.response(self,:target)) unless @target.nil?
-		add_response(@with.response(self,:with)) unless @with.nil?
+		add_response(self["target"].response(self,:target)) unless @target.nil?
+		add_response(self["with"].response(self,:with)) unless @with.nil?
 		return calculate
 	rescue ActionRevaluate => action
 		return action.preform

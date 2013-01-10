@@ -97,6 +97,12 @@ module Database
 	@database_entry_types = {} if @database_entry_types.nil? 
 	@database_entry_types[the_class] = blk  
   end
+  def self.set_assign_key(&blk)
+	@assign_key = blk
+  end
+  def self.assign_key
+	@assign_key
+  end
   def self.is_database_entry_class?(the_class)
 	@database_entry_types.any?{|key,val| key == the_class}
   end
@@ -106,8 +112,16 @@ module Database
 #####################################
 ### General Setup ##################
 self.add_database_entry_class(Class) { |ky|  @db[ky].nil?() ? nil : @db[ky].resolve }
-self.add_database_entry_class(Symbol) { |ky| @db[ky] }
-self.add_database_entry_class(String) { |ky| @db[ky].nil?() ? nil : @db[ky].resolve }
+#self.add_database_entry_class(Symbol) { |ky| @db[ky] }
+self.add_database_entry_class(Fixnum) { |ky| @db[ky] }
+self.add_database_entry_class(String) do |ky| 
+	temp = @db[ky]
+	(temp.is_a?(Reference)) ? temp.resolve : temp
+end
+self.set_assign_key do 
+	@max_key = 0 if @max_key.nil?
+	@max_key = @max_key + 1
+end
 ##################################### 
 ##%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%######
 ### Database Variables   ###########
@@ -126,13 +140,13 @@ self.add_database_entry_class(String) { |ky| @db[ky].nil?() ? nil : @db[ky].reso
   def add_to_db(input,key = nil)
   #TODO: Handle repeating a already selected key (raise an error or return nil?)
 	the_key = (key.nil?) ? assign_key(input) : key
-	@db[the_key] = input
+	db[the_key] = input
 	input.set_key(the_key,self) if Database.is_database?(input)
 	return the_key
   end
   def remove_from_db(input)      # Should never be called by designer (use only for moving)
 	if Database.is_database?(input)
-		@db.delete(:"#{input.key}") 
+		@db.delete(input.key) 
 		input.set_key(nil,nil)
 	else
 		@db.delete(find_key(input))
@@ -180,6 +194,7 @@ end
 	return @db.empty? rescue return true
  end
  def db_alive?
+	init_database if @db_alive.nil? #TODO: HIGH PRIORITY> Remove this line shouldn't be happening or should raise an error
 	return @db_alive
  end 
  def init_database(parent = nil)
@@ -204,8 +219,8 @@ end
 ###################################################################
 ### Key Management functions ########################
   def assign_key(input)
-	@max_key = @max_key + 1
-	return :"#{@max_key-1}"
+	return instance_exec input, &Database.assign_key
+#	return :"#{@max_key-1}"
   rescue 
 	init_database
 	retry
@@ -227,6 +242,7 @@ end
 	return nil
   end
   def [](ky)
+	binding.pry if Database[ky.class].nil?
 	return instance_exec ky, &Database[ky.class]
   end
 ###################################################################

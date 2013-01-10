@@ -1,5 +1,5 @@
 class Ground < Tile
-	def init
+	def init(args)
 		@ASCII = '.'
 	end
 end

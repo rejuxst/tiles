@@ -1,3 +1,4 @@
+require 'pry'
 class Move < Action
 	def self.up(source)
 		self.move_over_one(source,0,1)
@@ -17,16 +18,13 @@ class Move < Action
 		m = Move.new({:actor => source, :path => [stile, stile.offset(x,y)],:target=>stile.offset(x,y)})
 		return m.preform
 	end
-	def init
-	end
 	def preform_pre_callback
-		raise ActionCancel, :invalid if @actor.db_parent == @target.db_parent
+		raise ActionCancel, :invalid if self["actor"].db_parent == self["target"].db_parent
 	end
 	def calculate
-		if !@target.is_a? Tile
-			@target = @target.owner until @target.is_a? Tile
-		end
-		@actor.move_self_to_db @target
+		tile= self["target"]
+		tile = tile.db_parent until tile.is_a? Tile
+		self["actor"].move_self_to_db tile
 		
 	end
 end
