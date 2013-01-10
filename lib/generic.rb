@@ -16,10 +16,34 @@ module Generic
 			def default_properties
 				return (@default_properties.nil?) ? [] : @default_properties
 			end
-		end
-
+			def add_initialize_loop(*options,&blk)
+				if @initialize_loops.nil?
+					@initialize_loops = self.superclass.initialize_loops() rescue @initialize_loops = []
+				end
+				@initialize_loops.push blk
+			end
+			def initialize_loops
+				@initialize_loops.nil? ? @initialize_loops : []
+			end
+		end	
 	        def self.included(base)
 			base.extend Extentions
+		end
+		def initialize(*args)
+			init_database
+			self.class.default_properties.each {|prop| add_property(prop) }
+			self.class.initialize_loops {|loop| instance_exec args, &loop} 
+			init(*args)
+		end
+		def init(*args)
+		end
+		def add_property(prop,value_hash = {})
+		# add_property: Added the property prop to the database 
+		#		Alias the internal varibles as defined by the property
+		#	??	Add the support functions for the property to the object itself
+		prop = eval("#{prop.to_s.capitalize}") unless prop.is_a? Class #TODO: Switch to Dictionary lookup of property 
+		add_to_db(prop.new(value_hash),prop.to_s.lower)
+		prop.required_references {|name,blk| (blk.nil? || blk == true) ? add_reference(prop,name) : add_reference(prop,name) &blk }
 		end
 	end
 	module Responsive
@@ -37,7 +61,8 @@ module Generic
 			# Safety check on the inputs. 
 			to = "#{to}".downcase.to_sym
 			type = type.to_sym
-			raise "Invalid response cetegory for an reponse to an action" if type.nil? #TODO: Fix this if statement to cover the categories of action responses
+			raise "Invalid response cetegory for an reponse to an action" if type.nil? 
+			#TODO: Fix this if statement to cover the categories of action responses
 			@response = {} if @response.nil?
 			@response[to] = {} if @response[to].nil?
 			@response[to][type] = response

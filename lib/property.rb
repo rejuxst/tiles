@@ -10,11 +10,13 @@ class Property
 	#TODO: Secure this function
 		return @values.nil? ? {} : @values
 	end
-	def initialize
+	def initialize(value_hash = {})
 		init_database
 		self.class.values.each_pair do |name,params|	
-			key = add_to_db(params[:class].new)
-			add_reference name,ky	
+			key = add_to_db(params[:class].new,name)
 		end
+	end
+	def []=(ky,value)
+		add_to_db(value,key) #TODO: Should this really work and not throw an error?
 	end
 end
