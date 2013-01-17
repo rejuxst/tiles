@@ -220,10 +220,6 @@ end
 ### Key Management functions ########################
   def assign_key(input)
 	return instance_exec input, &Database.assign_key
-#	return :"#{@max_key-1}"
-  rescue 
-	init_database
-	retry
   end
   def set_key(key_val,parent)
 	@key = key_val
@@ -241,9 +237,11 @@ end
 	db.each_pair { |k,val|	return k if val.object_id == input.object_id }
 	return nil
   end
-  def [](ky)
-	binding.pry if Database[ky.class].nil?
+  def db_get(ky)	
 	return instance_exec ky, &Database[ky.class]
+  end
+  def [](ky)
+	return db_get(ky)
   end
 ###################################################################
   def for_each_db_entry(&blk)
@@ -277,5 +275,9 @@ end
 		this_db.add_element(i.db_dump) if i.db_dump?()
 	end	
 	return this_db;
+  end
+############## Misc Functions ##################################
+  def inspect
+	"#<#{self.class}:0x#{object_id.to_s(16)}| db: size(#{@db.length}) => References: #{@db.count{|ky,val| val.class <= Reference}}>"
   end
 end

@@ -22,11 +22,11 @@ $thisgame.start
 $thisgame.run
 $thisgame.stop
 ensure
-print "Waiting for input to close\n"
+#binding.pry
 #Ncurses.getch
 #Ncurses.close_screen
 puts $thisgame.players if $thisgame.class <= Game
-binding.pry
+
 
 end
 def require_from_source

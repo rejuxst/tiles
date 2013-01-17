@@ -19,12 +19,12 @@ class Move < Action
 		return m.preform
 	end
 	def preform_pre_callback
-		raise ActionCancel, :invalid if self["actor"].db_parent == self["target"].db_parent
+		raise ActionCancel, :invalid if from.db_parent == on.db_parent
 	end
 	def calculate
-		tile= self["target"]
+		tile= on
 		tile = tile.db_parent until tile.is_a? Tile
-		self["actor"].move_self_to_db tile
+		from.move_self_to_db tile
 		
 	end
 end
