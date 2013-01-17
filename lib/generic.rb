@@ -25,6 +25,10 @@ module Generic
 			def initialize_loops
 				@initialize_loops.nil? ? @initialize_loops : []
 			end
+			def enforce_reference(ref_key)
+
+			end
+
 		end	
 	        def self.included(base)
 			base.extend Extentions
@@ -53,10 +57,10 @@ module Generic
 		#
 			def add_response(to,type,response,options = {})
 			# add_response adds a response to an action to the calling class 
-			# to => the action that this class will respond to
-			# type => the category of interaction for this object (e.g :via, :using,:with,:target, etc.)
-			# response => the action/equation/effect to be processed
-			# options => additional options or information relavent to the process of calling  the response
+			# to => 	the action that this class will respond to
+			# type => 	the category of interaction for this object (e.g :via, :using,:with,:target, etc.)
+			# response => 	the action/equation/effect to be processed
+			# options => 	additional options or information relavent to the process of calling  the response
 			#######
 			# Safety check on the inputs. 
 			to = "#{to}".downcase.to_sym

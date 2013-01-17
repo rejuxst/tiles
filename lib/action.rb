@@ -2,7 +2,6 @@ require "generic"
 require 'pry'
 class Action
 	include Generic::Base
-	include Generic::Responsive
 	def init(args = {})
 		args = args[0] if args.is_a? Array
 		effects = []
@@ -21,28 +20,32 @@ class Action
 		end
 		return self
 	end
-	def from(actor)
+	def from(actor = nil)
+		return self["actor"] if actor.nil?
 		add_reference("actor",actor)
 		return self
 	end
-	def with(with)
+	def with(with = nil)
+		return self["with"] if with.nil?	
 		add_reference("with",with)
 		return self
 	end
-	def using(use)
+	def using(use = nil)
+		return self["using"] if use.nil?
 		add_reference("use",use)
 		return self
 	end
-	def on target
+	def on(target = nil)
+		return self["target"] if target.nil?
 		add_reference("target",target)
 		return self
 	end
 	def preform
 		preform_pre_callback
-		add_response(self["using"].response(self,:using)) unless @using.nil?
+		add_response(using.response(self,:using)) unless using.nil?
 		@path.each{ |t| add_response(t.response(self,:via))	} unless @path.nil?
-		add_response(self["target"].response(self,:target)) unless @target.nil?
-		add_response(self["with"].response(self,:with)) unless @with.nil?
+		add_response(on.response(self,:target)) unless on.nil?
+		add_response(with.response(self,:with)) unless with.nil?
 		return calculate
 	rescue ActionRevaluate => action
 		return action.preform
@@ -52,8 +55,7 @@ class Action
 	def calculate
 	
 	end
-	def preform_pre_callback
-	
+	def preform_pre_callback	
 	end
 	def add_response(response)
 		case response

@@ -47,6 +47,19 @@ class Database::Reference
 		end
 	end
 	class Collection < ::Database::Reference
+		def initialize(source,collection)
+			raise "Source location is not a Database Reference cannot be generated" if !Database.is_database?(source)
+			raise "Input is not a set of values collection should be an Array is a #{collection.class}" if !collection.is_a? Array	
+			@source = source
+			@collection = collection
+		end
+		def resolve
+			@collection.collect {|item| item.is_a? Reference ? item.resolve : item }.delete_if {|i| i.nil?}
+		end
+		def for_each()
+			raise "No block given to for_each" unless block_given?
+			resolve.each {|item| yield item}
+		end
 	end
 end
 
