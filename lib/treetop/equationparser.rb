@@ -5,7 +5,50 @@ module MathEquation
   include Treetop::Runtime
 
   def root
-    @root ||= :additive
+    @root ||= :equation
+  end
+
+  module Equation0
+    def additive
+      elements[1]
+    end
+  end
+
+  def _nt_equation
+    start_index = index
+    if node_cache[:equation].has_key?(index)
+      cached = node_cache[:equation][index]
+      if cached
+        cached = SyntaxNode.new(input, index...(index + 1)) if cached == true
+        @index = cached.interval.end
+      end
+      return cached
+    end
+
+    i0, s0 = index, []
+    if has_terminal?('', false, index)
+      r1 = instantiate_node(SyntaxNode,input, index...(index + 0))
+      @index += 0
+    else
+      terminal_parse_failure('')
+      r1 = nil
+    end
+    s0 << r1
+    if r1
+      r2 = _nt_additive
+      s0 << r2
+    end
+    if s0.last
+      r0 = instantiate_node(Equation,input, i0...index, s0)
+      r0.extend(Equation0)
+    else
+      @index = i0
+      r0 = nil
+    end
+
+    node_cache[:equation][start_index] = r0
+
+    r0
   end
 
   module Additive0
@@ -131,7 +174,7 @@ module MathEquation
       end
     end
     if s0.last
-      r0 = instantiate_node(OperationNode,input, i0...index, s0)
+      r0 = instantiate_node(Operation,input, i0...index, s0)
       r0.extend(Additive1)
     else
       @index = i0
@@ -266,7 +309,7 @@ module MathEquation
       end
     end
     if s0.last
-      r0 = instantiate_node(OperationNode,input, i0...index, s0)
+      r0 = instantiate_node(Operation,input, i0...index, s0)
       r0.extend(Multitive1)
     else
       @index = i0
@@ -378,6 +421,25 @@ module MathEquation
                 r10 = nil
               end
               s1 << r10
+              if r10
+                s11, i11 = [], index
+                loop do
+                  if has_terminal?(' ', false, index)
+                    r12 = instantiate_node(SyntaxNode,input, index...(index + 1))
+                    @index += 1
+                  else
+                    terminal_parse_failure(' ')
+                    r12 = nil
+                  end
+                  if r12
+                    s11 << r12
+                  else
+                    break
+                  end
+                end
+                r11 = instantiate_node(SyntaxNode,input, i11...index, s11)
+                s1 << r11
+              end
             end
           end
         end
@@ -394,13 +456,13 @@ module MathEquation
     if r1
       r0 = r1
     else
-      r11 = _nt_literal
-      if r11
-        r0 = r11
+      r13 = _nt_literal
+      if r13
+        r0 = r13
       else
-        r12 = _nt_variable
-        if r12
-          r0 = r12
+        r14 = _nt_variable
+        if r14
+          r0 = r14
         else
           @index = i0
           r0 = nil
