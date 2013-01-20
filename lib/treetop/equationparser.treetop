@@ -1,9 +1,12 @@
 grammar MathEquation
+	rule equation
+		'' additive <Equation>
+	end
 	rule additive
-		 start:multitive ' '* other_terms:( ' '*  operator:[+-]  ' '* term:multitive )*  <OperationNode> 
+		 start:multitive ' '* other_terms:( ' '*  operator:[+-]  ' '* term:multitive )*  <Operation> 
 	end
 	rule multitive
-		 start:primary   ' '* other_terms:( ' '*  operator:[*/%]  ' '* term:primary )*   <OperationNode>
+		 start:primary   ' '* other_terms:( ' '*  operator:[*/%]  ' '* term:primary )*   <Operation>
 	end
 	rule primary
 		' '* '(' ' '* additive ' '* ')' ' '* {

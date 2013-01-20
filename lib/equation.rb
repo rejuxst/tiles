@@ -1,54 +1,58 @@
-class Equation
-	def self.from_string(string)
-		ary = parse(string)
+require 'treetop'
+
+module MathEquation
+	class Equation  < Treetop::Runtime::SyntaxNode	
+		def value
+			additive.value
+		end
+		def source=(input)
+			@source = input
+		end
 	end
-	def resolve
-	end
-	def self.parse(string)
-		sub_divided = []
-		temp = ""
-		string.each_char do |char|
-			#binding.pry
-			case char
-				when /[\w,\d,#]/ 			then temp << char
-				when /[\*,%,-,+,\/,\\,\^,(,)]/ 	then sub_divided.push(temp.clone); sub_divided.push(char);temp.clear
-				when /\s/			then sub_divided.unshift(temp.clone);temp.clear
-				else raise SyntaxError, "Invalid Character encountered in equation #{char}"
+	class Operation < Treetop::Runtime::SyntaxNode
+		def value
+			other_terms.elements.inject(start.value) do |res,ele| 
+				res.send(ele.operator.text_value,ele.term.value) 
 			end
 		end
-		sub_divided.push temp.clone unless temp.empty?
-		return sub_divided
 	end
-	def initialize(target)
-		
-	end
-	class BasicOperation
-		def initialize(target,operator,collection)
-			@operator = operator
-			@collection = collection.collect { |i| (i.is_a?(Literal) or i.is_a?(Variable))?  i : Equation.create_element(target,i)}
+	class Literal < Treetop::Runtime::SyntaxNode
+		def is_literal?
+			true
 		end
-		def resolve
-			temp = @collection.collect{|item| item.resolve }
-			start = temp.pop
-			temp.each {|item| start = start.send(operator,item)}
+		def is_variable?
+			false
+		end
+		def value
+			text_value.to_i
 		end
 	end
-	class Variable
-		def initialize(target,value)
-			@target = target
-			@value = value
-		end
-		def resolve
-			@target[@value]
-		end
+	class Variable < Treetop::Runtime::SyntaxNode
+			def is_variable?
+				true
+			end
+			def is_literal?
+				false
+			end
+			def value
+				@source[text_value]
+			end
 	end
-	class Literal
-		def initialize(value)
-			@value = value
-		end
-		def resolve
-			@value
-		end
+end
+class Equation
+	Treetop.load File.join(File.dirname(__FILE__),'treetop/equationparser')
+	@@parser = MathEquationParser.new
+	def initialize(string)
+		@equation = @@parser.parse(string)
+	end
+	def source=(src)
+		@source = src
+	end
+	def resolve
+		return @equation.value
+	end
+	def self.last_failure_reason
+		return @@parser.failure_reason
 	end
 end
 
