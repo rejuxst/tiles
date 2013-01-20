@@ -1,0 +1,23 @@
+grammar MathEquation
+	rule additive
+		 start:multitive ' '* other_terms:( ' '*  operator:[+-]  ' '* term:multitive )*  <OperationNode> 
+	end
+	rule multitive
+		 start:primary   ' '* other_terms:( ' '*  operator:[*/%]  ' '* term:primary )*   <OperationNode>
+	end
+	rule primary
+		' '* '(' ' '* additive ' '* ')' ' '* {
+			def value
+				additive.value
+			end
+		}
+		/ literal / variable
+	end
+	rule literal
+		' '* '-'? [0-9]+ ('.' [0-9]+)? ' '* <Literal>
+	end
+	rule variable
+		' '* [a-zA-Z]+ ' '* <Varible>
+	end
+
+end
