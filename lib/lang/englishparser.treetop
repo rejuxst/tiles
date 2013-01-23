@@ -1,0 +1,18 @@
+grammar EnglishLanguage
+	rule sentence
+		first:word_chain '.'?  <::English::Sentence>
+#		 ( (' '* word)  / comma / semi_colon )*  '.'? <::English::Sentence>
+	end	
+	rule word_chain
+		word:word [\s]* next:word_chain? 
+	end
+	rule word
+		[A-Za-z]+ <::English::Word>
+	end
+	rule comma
+		','
+	end
+	rule semi_colon
+		';'
+	end
+end
