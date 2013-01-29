@@ -14,14 +14,17 @@ class Database::Reference
 		return @target if resolve.nil?
 		return nil
 	end
-	def initialize(source,target)
+	def initialize(source,target,opts = {}, &blk)
                 # Input validation checks
+#		binding.pry
 		raise "Source location is not a Database Reference cannot be generated" if !Database.is_database?(source)
-		raise "Target location is not a Database Try making a local reference" if !Database.is_database?(source)
+#		raise "Target location is not a Database Try making a local reference" if !Database.is_database?(target)
                 @source = source
 		@target = target
+		@blk    = opts[:proc] || blk
 	end
 	def resolve
+		return @blk.call(@source,@target) unless @blk.nil?
 		return @target if @target.db_alive? and @source.db_alive?
 		return nil
 	end

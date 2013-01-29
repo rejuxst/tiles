@@ -85,7 +85,7 @@ module Database
   def self.read_db(xmlstring)	
   end
   def self.is_database?(input)
-	return input.class.include?(Database) 
+	(input.is_a? Class) ? input.singleton_class.include?(Database) : input.class.include?(Database) #rescue return false
   end
   def self.is_data?(input)
 	return !is_database?(input)
@@ -173,14 +173,15 @@ end
   end
 ###################################################################
 # Reference control functions
-def add_reference(key,target,blk = nil)
+def add_reference(key,target,&blk)
 # A reference is added as a chain of object keys. it is stored as chain of keys strating from any database 
 	unless key.class <= String && key.to_i.to_s != key
 		raise "Invalid key type. Key for Reference should be of type String, key is a #{key.class}" 
 	end
-	add_to_db Reference.new(self,target) , key
+	
+	add_to_db Reference.new(self,target,:proc => blk) , key
 end
-def add_reference_chain(key,chain,blk = nil)
+def add_reference_chain(key,chain,&blk)
 	unless key.class <= String && key.to_i.to_s != key
 		raise "Invalid key type. Key for Reference should be of type String, key is a #{key.class}" 
 	end
