@@ -24,6 +24,14 @@ class Test_Linguistics < Tiles_Test
 		assert_equal(4,b.list_connectors.length)
 	end 
 	def test_interactive
+		English::Grammer["adjective"] = "A+"
+		English::Grammer["subject"]   = "A-"
+		English::Dictionary["large"]  = "adjective"
+		English::Dictionary["dog"]    = "subject"
+		sen = English.parse 'large dog'
+		f = sen[0].get_wordclass.connectors[0]
+		b = sen[1].get_wordclass.connectors[0]
+		assert(sen.resolve, "Didnt resolve")
 		binding.pry
 	end
 end
