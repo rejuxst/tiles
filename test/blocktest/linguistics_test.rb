@@ -25,13 +25,11 @@ class Test_Linguistics < Tiles_Test
 	end 
 	def test_interactive
 		English::Grammer["adjective"] = "A+"
-		English::Grammer["subject"]   = "A-"
+		English::Grammer["noun"]   = "A-"
 		English::Dictionary["large"]  = "adjective"
-		English::Dictionary["dog"]    = "subject"
+		English::Dictionary["dog"]    = "noun"
 		sen = English.parse 'large dog'
-		f = sen[0].get_wordclass.connectors[0]
-		b = sen[1].get_wordclass.connectors[0]
-		assert(sen.resolve, "Didnt resolve")
-		binding.pry
+		assert(sen.parse, "Didnt resolve")
+		assert_equal('dog',sen.subject.word, "Not the subject")
 	end
 end
