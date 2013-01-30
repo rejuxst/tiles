@@ -8,8 +8,7 @@ class English < Language
 	end
 	class Dictionary < Language::Dictionary
 	end
-	class Sentence  < Treetop::Runtime::SyntaxNode
-		include Linguistics::Sequence
+	class Sentence  < Linguistics::Sentence
 		def self.from_string(string)
 			return English.parse(string)
 		end	
@@ -19,16 +18,27 @@ class English < Language
 			(@words ||= [first.word]).push ele.word until (ele = ele.next).empty? 
 			@words
 		end
+		def parse
+			super
+			(0...wordclasses.length).each {|i| words[1].wordclass = wordclasses[i] }
+		end
 		def [](index)
 			words[index]
 		end
-	end
-	class Word < Treetop::Runtime::SyntaxNode
-		def get_wordclass
-			English::Grammer[English::Dictionary[text_value.strip].grammer]
+		def nouns
+			words.find_all { |w| English::Dictionary[w.word].grammer == "noun" }
 		end
-		def word
-			text_value.strip
+		def verbs
+			words.find_all { |w| English::Dictionary[w.word].grammer == "verbs" } 
+		end
+		def subject
+			(nouns.find_all { |w| w.is_subject? })[0]
+		end
+	end
+	class Word < Language::Word 
+		set_language English
+		def is_subject?
+			wordclass.connectors.any? { |con| !con.links.empty? && con.type.text_value == 'A' }
 		end
 	end
 
