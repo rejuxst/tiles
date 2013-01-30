@@ -85,7 +85,7 @@ module Database
   def self.read_db(xmlstring)	
   end
   def self.is_database?(input)
-	(input.is_a? Class) ? input.singleton_class.include?(Database) : input.class.include?(Database) #rescue return false
+	(input.is_a? Class) ? input.is_database? : input.class.include?(Database) rescue return false
   end
   def self.is_data?(input)
 	return !is_database?(input)
@@ -276,6 +276,9 @@ end
 		this_db.add_element(i.db_dump) if i.db_dump?()
 	end	
 	return this_db;
+  end
+  def is_database?
+	true
   end
 ############## Misc Functions ##################################
   def inspect
