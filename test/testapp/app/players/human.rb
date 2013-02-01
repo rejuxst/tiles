@@ -1,21 +1,23 @@
+require 'pry'
 require 'mixins/ncurses/ncurses_ui'
 class Human < Player
-	def initialize(arghash = {})
-		super(:ui => Ncurses::UI.new())
-		init(arghash)
-	end
+#	def initialize(arghash = {})
+#		super(:ui => Ncurses::UI.new())
+#		init(*arghash)
+#	end
 	def init(arghash = {})
+#		@ui = Ncurses::UI.new()
 	end
 	def process_event(event)
-			# There are lots of cool ways to do this in ruby
-			while 1 # Loop until valid input
-			i = Move.down(@controls[0])   if event == 'w'
-                        i = Move.left(@controls[0])   if event == 'd'
-                        i = Move.right(@controls[0])  if event == 'a'
-                        i = Move.up(@controls[0])     if event == 's'
+		# There are lots of cool ways to do this in ruby
+		while 1 # Loop until valid input
+			i = Move.down(controls[0])   if event == 'w'
+			i = Move.left(controls[0])   if event == 'd'
+			i = Move.right(controls[0])  if event == 'a'
+			i = Move.up(controls[0])     if event == 's'
 			return i 		    unless i.nil?
 			event = @ui.getevent 	    if i.nil?
-			end
+		end
 	end 
 end
 class SuperHuman_DEBUG < Human

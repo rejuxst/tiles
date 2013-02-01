@@ -10,19 +10,21 @@ def run
 	gem_original_require File.join(filedir,"app/players/human")
 	# Initialize Game
 	$thisgame = Crawl.new
-	$thisgame.players << SuperHuman_DEBUG.new() #:ui => Ncurses::UI.new
-	$thisgame.map.tile(10,10).add_to_db Actor.new(:ASCII => '@', :controller => $thisgame.players[0])
-	tt = Thing.new(:ASCII => 'X');
+	$thisgame.players << SuperHuman_DEBUG.new( :ui => Ncurses::UI.new )
+	$thisgame.players[0].take_control Actor.new(:ASCII => '@'),:reference => "character"
+	$thisgame.map.tile(10,10).add_to_db $thisgame.players[0].character
+#Actor.new(:ASCII => '@', :controller => $thisgame.players[0])
+	tt = Thing.new(:ASCII => '&');
 	tt.add_to_db Thing.new(:ASCII => '$')
 	$thisgame.map.tile(1,1).add_to_db tt
 	$thisgame.start
 	$thisgame.run
 	$thisgame.stop
 ensure
-	#binding.pry
+	binding.pry
 	#Ncurses.getch
 	#Ncurses.close_screen
-	puts $thisgame.players if $thisgame.class <= Game
+	puts "#{$thisgame.players}" if $thisgame.class <= Game
 end
 
 def require_from_source
