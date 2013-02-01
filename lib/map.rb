@@ -8,16 +8,18 @@ class Map
 	attr_reader :parent, :maps # list of lower level maps
 	attr_reader :tiles
 	
-	def initialize
-		@parent = nil
-		init
-	end
+#	def initialize
+#		@parent = nil
+#		init
+#	end
 	def init
+		@parent = nil
 		@rows = 	20
 		@columns = 	20
 		@tiles = Array.new(@rows) do |e|
 			e = Array.new(@columns) {Tile.new(:ASCII => ".",:owner => self)}
 		end
+		@tiles.flatten.each { |t| add_to_db t }
 	end
 	# Tile access and manipulation functions 
 	def tile(r,c)

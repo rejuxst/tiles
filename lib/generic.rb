@@ -17,13 +17,13 @@ module Generic
 				return (@default_properties.nil?) ? [] : @default_properties
 			end
 			def add_initialize_loop(*options,&blk)
-				if @initialize_loops.nil?
-					@initialize_loops = self.superclass.initialize_loops() rescue @initialize_loops = []
-				end
-				@initialize_loops.push blk
+				#if @initialize_loops.nil?
+				#	@initialize_loops = self.superclass.initialize_loops() rescue @initialize_loops = []
+				#end
+				initialize_loops.push blk
 			end
 			def initialize_loops
-				@initialize_loops.nil? ? @initialize_loops : []
+				@initialize_loops ||= (self.superclass.initialize_loops() rescue @initialize_loops = [])
 			end
 			def enforce_reference(ref_key)
 
@@ -36,7 +36,7 @@ module Generic
 		def initialize(*args)
 			init_database
 			self.class.default_properties.each {|prop| add_property(prop) }
-			self.class.initialize_loops {|loop| instance_exec args, &loop} 
+			self.class.initialize_loops.each {|loop| instance_exec *args, &loop} 
 			init(*args)
 		end
 		def init(*args)

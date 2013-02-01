@@ -1,3 +1,4 @@
+require 'pry'
 require "UI"
 require "generic"
 require "active"
@@ -6,21 +7,12 @@ class Game
 	include Generic::Base
 	include Generic::Responsive
 	include Active
-	include Database
-	attr_accessor :map, :things, :players, :views
-	attr_accessor :turn
-	def initialize
-		@map = nil
-		@players = []
-		@views = []
-		@controller = nil
-		@things = []
-		@turn = 0
-		init
-		init_database(nil)
-	end
-	def init
-		@map = Map.new
+
+	add_initialize_loop do |*args|
+		add_reference		"map", Map.new,:add_then_reference => true
+		add_reference_set 	"players",[],:add_then_reference => true	
+		add_reference_set 	"things",[],:add_then_reference => true
+		add_reference_set 	"views",[],:add_then_reference => true
 	end
 	def start
 		
@@ -28,10 +20,10 @@ class Game
 	def run
 		while 1
 			# players take their turn
-			@players.each{|p| p.take_turn if p.turn == turn}
+			players.each{ |p| p.take_turn if p.turn == turn}
 			process_events
 			actors_take_turns	# all uncontrolled actors take their turn
-			@turn += 1
+			self.turn.value = self.turn + 1
 		end
 	end
 	def process_events
@@ -40,7 +32,7 @@ class Game
 	def actors_take_turns
 		# find actors on current turn
 		turnproc = Proc.new() do |t, &y|			# Recursive actor check
-			if t.class <= Actor && t.turn == turn	# Check current
+			if t.is_a?(Actor) && t.turn == self.turn	# Check current
 				t.take_turn if t.controller.nil?
 			end
 			if !t.db_empty? 			# Recursion to items things
@@ -54,15 +46,15 @@ class Game
 			if !t.maps.nil?					  # Recursion to submaps
 				t.maps.each {|q| y.call(q,&y)}
 			end
-			t.for_each_db_entry { |t| turnproc.call(t,&turnproc) }	# check the things
+			t.for_each_instance { |t| turnproc.call(t,&turnproc) }	# check the things
 			# check the tiles (:tiles => tiles[:column] => tile.things)
 			t.tiles.each { |ti| ti.each { |t2| t2.for_each_instance { |t3| turnproc.call(t3,&turnproc)}}}
 		end
-		@things.each { |b| print(b)}
-		@things.each { |t| turnproc.call(t,&turnproc) }# Find all the things in the main map
+		things.each { |b| print(b)}
+		things.each { |t| turnproc.call(t,&turnproc) }# Find all the things in the main map
 		mapproc.call(map,&mapproc)			# Find all the actors in all the maps
 	end
 	def stop
-		@views.each {|v| v.close}
+		views.each {|v| v.close}
 	end
 end

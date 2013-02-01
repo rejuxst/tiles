@@ -1,6 +1,6 @@
 class Crawl < Game
 	def init
-		@map = Dungeon.new
+		 add_reference "map", Dungeon.new, :add_then_reference => true
 	end
 	def start
 	end

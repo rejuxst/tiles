@@ -1,5 +1,7 @@
+require 'pry'
 class Dungeon < Map
 	def init
+
 		@rows = 	20
 		@columns = 	20
 		p = create_primitive
