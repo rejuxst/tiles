@@ -108,6 +108,10 @@ class Database::Reference
 		end
 		def value=(input)
 			@var = input if Variable.valid_class?(input)
+			@var = input.value if input.is_a? Variable
+		end
+		def set(input,opts = {})
+			self.value = input
 		end
 		def initialize(parent,var)
 			raise "Invalid Datatype: #{var.class}" unless Variable.valid_class?(var)
@@ -135,7 +139,7 @@ class Database::Reference
 			end
 		end
 		def self.valid_class?(var)
-			[Numeric,String,Symbol].any? { |c| var.is_a? c}
+			[NilClass,Numeric,String,Symbol].any? { |c| var.is_a? c}
 		end
 	end
 end

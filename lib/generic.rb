@@ -3,30 +3,26 @@ module Generic
 	module Base
 	#generic contains methods global to all instanciated objects
 	include Database
+		#note that 
 		module Extentions
 			def add_properties(*args)
-				if @default_properties.nil?
-					@default_properties = super.default_properties rescue @default_properties = []
-				end
-				args.each do  |p|
-					@default_properties.push p
-				end
-				return nil
+				@default_properties ||= (super.default_properties rescue @default_properties = [])
+				args.each {  |p| @default_properties.push p }
+				nil
 			end
 			def default_properties
-				return (@default_properties.nil?) ? [] : @default_properties
+				@default_properties || []
 			end
 			def add_initialize_loop(*options,&blk)
-				#if @initialize_loops.nil?
-				#	@initialize_loops = self.superclass.initialize_loops() rescue @initialize_loops = []
-				#end
 				initialize_loops.push blk
 			end
 			def initialize_loops
 				@initialize_loops ||= (self.superclass.initialize_loops() rescue @initialize_loops = [])
 			end
-			def enforce_reference(ref_key)
-
+			def enforce_reference(*ref_key)
+				@enforcable_references ||= []
+				ref_key.each{ |ref| @enforcable_references.push ref } 
+				@enforcable_references.collect {|ref| ref}
 			end
 
 		end	
@@ -35,8 +31,9 @@ module Generic
 		end
 		def initialize(*args)
 			init_database
-			self.class.default_properties.each {|prop| add_property(prop) }
+			self.class.enforce_reference().each {|ref| self.add_reference ref, nil , :add_then_reference => true }
 			self.class.initialize_loops.each {|loop| instance_exec *args, &loop} 
+			self.class.default_properties.each {|prop| self.add_property(prop) }
 			init(*args)
 		end
 		def init(*args)
@@ -45,9 +42,13 @@ module Generic
 		# add_property: Added the property prop to the database 
 		#		Alias the internal varibles as defined by the property
 		#	??	Add the support functions for the property to the object itself
-		prop = eval("#{prop.to_s.capitalize}") unless prop.is_a? Class #TODO: Switch to Dictionary lookup of property 
-		add_to_db(prop.new(value_hash),prop.to_s.lower)
-		prop.required_references {|name,blk| (blk.nil? || blk == true) ? add_reference(prop,name) : add_reference(prop,name) &blk }
+			prop = eval("#{prop.to_s.capitalize}") unless prop.is_a? Class 
+				#TODO: Switch to Dictionary lookup of property 
+			instance = prop.new(value_hash)
+			add_to_db(instance,prop.to_s.downcase)
+			prop.required_references.each_pair do |name,params| 
+				add_reference name,instance,&params		
+			end
 		end
 	end
 	module Responsive
