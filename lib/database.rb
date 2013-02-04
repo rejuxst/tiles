@@ -191,9 +191,12 @@ end
 	return db_get(ky)
   end
 ################## Missing Method #################################
+  # Allows for dynamic declaration of singleton methods to access references
+  # TODO: What happens when a reference is removed?
+  # TODO: Make sure the base code relies on safe idioms
   def method_missing(method_sym, *arguments, &block)
 	possible_output = self.db_get(method_sym.to_s)
-	unless possible_output.nil?
+	if !possible_output.nil? || db.has_key?(method_sym.to_s)
 		define_singleton_method method_sym.to_sym, Proc.new() { self.db_get(method_sym.to_s) }
 		self.db_get(method_sym.to_s)
 	else
