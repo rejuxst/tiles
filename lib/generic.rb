@@ -56,28 +56,31 @@ module Generic
 		# @response is the class varible for response hash
 		# via : 
 		#
-			def add_response(to,type,response,options = {})
+			def add_response(to,type,response)
 			# add_response adds a response to an action to the calling class 
 			# to => 	the action that this class will respond to
 			# type => 	the category of interaction for this object (e.g :via, :using,:with,:target, etc.)
 			# response => 	the action/equation/effect to be processed
 			# options => 	additional options or information relavent to the process of calling  the response
 			#######
-			# Safety check on the inputs. 
-			to = "#{to}".downcase.to_sym
-			type = type.to_sym
-			raise "Invalid response cetegory for an reponse to an action" if type.nil? 
-			#TODO: Fix this if statement to cover the categories of action responses
-			@response = {} if @response.nil?
-			@response[to] = {} if @response[to].nil?
-			@response[to][type] = response
+			# Safety check on the inputs.
+			to = to.to_s
+			type = type.to_s
+			raise "Invalid response cetegory for a response to an action" unless 
+				%w[via using with target actor on].any?{ |cat| type == cat }  
+
+			@response ||= {} 
+			@response[to] ||= {} 
+			@response[to][type] = (	response.is_a?(Hash) ) ?
+						response[:effect] || response[:response] || response[:block]
+						: response
+			#binding.pry 
 			end
 			def response(action,as)
 				# Returns the effects of the response to an action
-				act_class = action
-				act_class = action.class unless action.is_a?(Class)
-				unless @response.nil? || @response["#{act_class}".downcase.to_sym].nil?
-					return @response["#{act_class}".downcase.to_sym][as] 
+				act_class = (action.is_a?(Class)) ? action : action.class
+				unless @response.nil? || @response[act_class.to_s.downcase].nil?
+					return @response[act_class.to_s.downcase][as.to_s] 
 				end
 				return self.superclass.response(action,as) rescue return nil
 			end
@@ -87,10 +90,9 @@ module Generic
 		end
 		def response(action,as)
 			# Returns the effects of the response to an action
-			act_class = action
-			act_class = action.class unless action.is_a?(Class)
-			unless @response.nil? || @response["#{act_class}".downcase.to_sym].nil?
-				return @response["#{act_class}".downcase.to_sym][as] 
+			act_class = (action.is_a?(Class)) ? action : action.class
+			unless @response.nil? || @response[act_class.to_s.downcase].nil?
+				return @response[act_class.to_s.downcase][as.to_s] 
 			end
 			return self.class.response(action,as)
 		end

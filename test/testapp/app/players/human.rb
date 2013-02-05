@@ -71,7 +71,7 @@ class SuperHuman_DEBUG < Human
 			Ncurses.setpos(0,left_col)
 			Ncurses.addstr("Player 1")
 			Ncurses.setpos(1,left_col)	
-			Ncurses.addstr("HP: #{'*' * @owner.character.hp}")
+			Ncurses.addstr("HP: #{'X' * @owner.character.hp}#{'-' * ( @owner.character.max_hp -  @owner.character.hp )}")
 		end
 		def sendchar(input)
 			return process_shell if input == "\n".ord or input == "\r".ord or input == 10

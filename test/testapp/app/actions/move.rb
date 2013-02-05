@@ -22,9 +22,8 @@ class Move < Action
 		raise ActionCancel, :invalid if from.db_parent == on.db_parent
 	end
 	def calculate
-		tile= on
+		tile = on
 		tile = tile.db_parent until tile.is_a? Tile
-		from.move_self_to_db tile
-		
+		from.move_self_to_db tile		
 	end
 end

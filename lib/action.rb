@@ -4,7 +4,7 @@ class Action
 	include Generic::Base
 	def init(args = {})
 		args = args[0] if args.is_a? Array
-		effects = []
+		@effects = []
 		from(args[:actor])
 		on(args[:target])
 		with(args[:with])
@@ -42,11 +42,12 @@ class Action
 	end
 	def preform
 		preform_pre_callback
-		add_response(using.response(self,:using)) unless using.nil?
+		add_response(using.response(self,:using)) 		  unless using.nil?
 		@path.each{ |t| add_response(t.response(self,:via))	} unless @path.nil?
-		add_response(on.response(self,:target)) unless on.nil?
-		add_response(with.response(self,:with)) unless with.nil?
-		return calculate
+		add_response(on.response(self,:target)) 		  unless on.nil?
+		add_response(with.response(self,:with)) 		  unless with.nil?
+		calculate 
+		@effects.each { |effect| effect.resolve(self) }
 	rescue ActionRevaluate => action
 		return action.preform
 	rescue ActionCancel
@@ -59,15 +60,14 @@ class Action
 	end
 	def add_response(response)
 		case response
-		when Array 		then	@effects << response
-		when Proc 		then 	out = r.call(self)
-		when Symbol
-			case response
-			when :none
-			when :cancel	then raise ActionCancel, "One of the components of the Action canceled it"
-			when :retry
-			end
-		when NilClass 		then	return nil
+		when Array 	then	response.flatten.each { |r| add_response r }
+		when Effect	then	@effects << Effect.new(response.to_s)
+		when String	then 	@effects << Effect.new(response.to_s)
+		when Proc 	then 	out = r.call(self)
+		when :none
+		when :cancel	then raise ActionCancel, "One of the components of the Action canceled it"
+		when :retry
+		when nil 	then	return nil
 		else
 		end
 	end
