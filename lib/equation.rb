@@ -55,7 +55,11 @@ module MathEquation
 				false
 			end
 			def value(src = nil)
-				text_value.strip.split('#').inject(src || parent.source) { |res,ele| res[ele] }
+			text_value.strip.split('#').inject(src || parent.source) do |res,ele| 
+				res[ele] unless res.nil?  
+			end || default.to.value
+			rescue 
+				nil
 			end
 	end
 end

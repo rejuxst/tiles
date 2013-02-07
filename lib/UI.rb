@@ -8,6 +8,7 @@ class UI
 	end
 	def getevent
 	end
+	def setup
+	end
 end
-
 

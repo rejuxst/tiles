@@ -65,37 +65,51 @@ class Database::Reference
 	end
 	class Set < ::Database::Reference
 		include Enumerable
-		def initialize(source, array,opts = {})
+		def initialize(source, data, opts = {})
 			@source = source
-			@array = array
+			@hash = {}
+			i = -1
+			case data
+			when Array then data.each { |d| @hash[(i+= 1)] = d } 
+			when Hash  then data.each_pair { |k,d| @hash[k] = d }
+			else raise "Input initialization set is not a Array or Hash when creating #{self.class}"
+			end
 		end
 		def each &blk
-			@array.each { |ele| (block_given?) ? blk.call(ele) : yield(ele) }
+			@hash.each do |key,ele| 
+				if block_given?  
+					(blk.parameters.length < 2) ? blk.call(ele) : blk.class(key,ele)
+				else
+					yield(key,ele) 
+				end
+			end
 		end
 		def <<(item)
 			add(item)
 		end
 		def [](*ind)
-			@array[*ind]
+			index(*ind)
 		end
 		def index(*ind)
-			@array[*ind]
+			ind.inject(@hash) { |h,ele| h[ele] }
 		end
-		def add(item)
+		def add(item, opts = {})
 			@source.add_to_db(item) if item.db_parent.nil?
-			@array.push(item) 	#if  @source.in_this_db?(item)
+			if opts[:key].nil?
+				i = 0;	(i  += 1) until @hash[i].nil? 	
+				@hash[i] = item
+			else
+				@hash[opts[:key]] = item 
+			end
 			self
 		end
 		def delete(object)
-			@array.delete(object)
+			@hash.delete_if	{ |k,v| object == k or object == v} 
 		end
 		def resolve
-			@array.delete_if { |ele| !ele.db_alive? }#|| !@source.in_this_db?(ele) }
+			@hash.delete_if { |k,ele| !ele.db_alive? }
 			self
 		end
-		def flatten(depth = nil)
-			@array.collect { |ele| (ele.is_a?(Set) || ele.is_a?(Array)) ? ele.flatten(depth) : ele }.flatten(depth)
-		end	
 	end
 	class Variable < ::Database::Reference
 		include Comparable

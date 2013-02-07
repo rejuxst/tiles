@@ -24,7 +24,7 @@ grammar MathEquation
 	end
 	#TODO: Fix this to allow for 1 letter long variables/references
 	rule variable
-		' '* [a-zA-Z] [a-z#A-Z]+  ' '* <Variable> 
+		' '* [a-zA-Z] [a-z#A-Z]+ default:('?' to:literal)? ' '* <Variable> 
 	end
 
 end
