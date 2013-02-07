@@ -23,9 +23,7 @@ class Player
 	end
 	def take_control item, opts = {}
 		item.controller= self
-#		item.move_self_to_db(self)
 		add_reference opts[:reference], item unless opts[:reference].nil?
-		controls.add item
-
+		controls.add item, :key => opts[:add_as] || opts[:reference]
 	end
 end	

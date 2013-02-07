@@ -29,6 +29,9 @@ end
 end
 	class UI < UI
 		def initialize
+			setup
+		end
+		def setup
 			Ncurses.init_screen	
 			Ncurses.cbreak           # provide unbuffered input
 			Ncurses.noecho           # turn off input echoing

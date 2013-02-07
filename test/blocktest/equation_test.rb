@@ -27,15 +27,22 @@ class Test_Equation < Tiles_Test
 		thing.item.value.set 3
 		assert_equal 5, eq.resolve
 		thing.item.add_variable "output", 0
+		# Test Resolving to targets value
 		eq = Equation.new("output = value + 2")
 		assert eq.parse_failure? , "Equation did not resolve => #{Equation.last_failure_reason}"
 		eq.source = thing.item
 		eq.resolve
 		assert_equal 5, thing.item.output
+		# Test nested variables
 		eq = Equation.new("item#output = item#value + 2")
 		assert eq.parse_failure? , "Equation did not resolve => #{Equation.last_failure_reason}"
 		eq.source = thing
 		eq.resolve
 		assert_equal 5, thing.item.output
+		# Test defaulting
+		eq = Equation.new("item#output = item#nonexist?4 + 2")
+		eq.source = thing
+		eq.resolve
+		assert_equal 6, thing.item.output
 	end
 end

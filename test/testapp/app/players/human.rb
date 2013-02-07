@@ -6,16 +6,17 @@ class Human < Player
 	def process_event(event)
 		# There are lots of cool ways to do this in ruby
 		while 1 # Loop until valid input
-			i = Move.down(controls[0])   if event == 'w'
-			i = Move.left(controls[0])   if event == 'd'
-			i = Move.right(controls[0])  if event == 'a'
-			i = Move.up(controls[0])     if event == 's'
+			i = Move.down(controls["character"])   if event == 'w'
+			i = Move.left(controls["character"])   if event == 'd'
+			i = Move.right(controls["character"])  if event == 'a'
+			i = Move.up(controls["character"])     if event == 's'
 			return i 		    unless i.nil?
 			event = @ui.getevent 	    if i.nil?
 		end
 	end 
 end
 class SuperHuman_DEBUG < Human
+	attr_reader :ui
 	def init(arghash = {})
 		super
 		@ui = SuperHuman_DEBUG::INTERACTIVEUI.new(self)

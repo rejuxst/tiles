@@ -1,53 +1,16 @@
-require 'pry'
-def run
-	filedir = File.dirname(File.absolute_path(__FILE__))
-	gem_original_require File.join(filedir,"app/maps/dungeon") #"app/maps/dungeon"
-	gem_original_require File.join(filedir,"app/games/crawl")
-	gem_original_require File.join(filedir,"app/tiles/ground")
-	gem_original_require File.join(filedir,"app/tiles/water")
-	gem_original_require File.join(filedir,"app/tiles/wall")
-	gem_original_require File.join(filedir,"app/actions/move")
-	gem_original_require File.join(filedir,"app/players/human")
-	gem_original_require File.join(filedir,"app/actors/character")
-	# Initialize Game
-	$thisgame = Crawl.new
-	$thisgame.players << SuperHuman_DEBUG.new( :ui => Ncurses::UI.new )
-	$thisgame.players[0].take_control Character.new(:ASCII => '@'), :reference => "character"
-	$thisgame.map.tile(10,10).add_to_db $thisgame.players[0].character
-#Actor.new(:ASCII => '@', :controller => $thisgame.players[0])
-	tt = Thing.new(:ASCII => '&');
-	tt.add_to_db Thing.new(:ASCII => '$')
-	$thisgame.map.tile(1,1).add_to_db tt
-	$thisgame.start
-	$thisgame.run
-	$thisgame.stop
-ensure
-	Ncurses.close_screen
-	binding.pry
-	#Ncurses.getch
-	puts "#{$thisgame.players.collect {|p| "#{p}"}}" if $thisgame.class <= Game
-end
-
-def require_from_source
-$LOAD_PATH << File.absolute_path(File.join(File.dirname(__FILE__),'/../../lib/'))
-core = File.join(File.dirname(__FILE__),"..","..","lib")
-#puts "$LOAD_PATH LIST:"
-#puts $LOAD_PATH
-Dir.open(core) do |ent|
-	ent.entries.each do |f|
-	unless File.directory?(File.join(core,f)) || !(f.match(/\.gitignore/).nil?) || !(f.match(/\.swp/).nil?)
-		succ = gem_original_require File.expand_path(File.join(ent.to_path,f.partition('.')[0]))
-		puts "Requiring lib file: #{File.join(f.partition('.')[0])} => #{succ}"	
-	end
-	end
-end
-rescue 
-	binding.pry
-end
-
 ### MAIN LOOP ###
-begin
-	require_from_source
-	require 'mixins/ncurses/ncurses_ui'
-	run
-end
+$LOAD_PATH << File.absolute_path(File.join(File.dirname(__FILE__),'/../../lib/'))
+require 'launcher'
+Tiles::Launcher.launch( "Crawl", 
+		:debug => true, 
+		:load_source => :source, :source_dir => File.join(Dir.pwd,'lib') , 
+		:app_dir => File.join(Dir.pwd,'test','testapp')	,
+		:safe_level => 0
+		) do |game|
+	$thisgame = game
+	game.players << SuperHuman_DEBUG.new( :ui => Ncurses::UI.new )
+	game.players[0].take_control Character.new(:ASCII => '@'), :reference => "character"
+	game.map.tile(10,10).add_to_db game.players[0].character
+#	game.views << game.players[0].ui
+end 
+
