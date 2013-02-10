@@ -9,13 +9,14 @@ class Player
 	add_initialize_loop do |arghash = {}|
 		add_reference_set 	"controls",[],:add_then_reference => true
 		@ui ||= arghash[:ui]
-		ui.owner = self unless ui.nil? 
+#		ui.owner = self unless ui.nil? 
 	end
 	def take_turn
 		if !ui.nil?		
-			ui.render
-			event = ui.getevent
-			process_event event
+			instance_exec  &(ui.take_turn)
+#			ui.render
+#			event = ui.getevent
+#			process_event event
 		end
 		turn.value= turn + 1
 	end

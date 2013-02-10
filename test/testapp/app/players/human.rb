@@ -3,40 +3,40 @@ require 'mixins/ncurses/ncurses_ui'
 class Human < Player
 	def init(arghash = {})
 	end
-	def process_event(event)
-		# There are lots of cool ways to do this in ruby
-		while 1 # Loop until valid input
-			i = Move.down(controls["character"])   if event == 'w'
-			i = Move.left(controls["character"])   if event == 'd'
-			i = Move.right(controls["character"])  if event == 'a'
-			i = Move.up(controls["character"])     if event == 's'
-			return i 		    unless i.nil?
-			event = @ui.getevent 	    if i.nil?
-		end
-	end 
 end
 class SuperHuman_DEBUG < Human
 	attr_reader :ui
 	def init(arghash = {})
 		super
-		@ui = SuperHuman_DEBUG::INTERACTIVEUI.new(self)
 		@useshell = false;
 	end
-	def process_event(event)
-		if !@useshell 
-			return super unless event == 'p'	# Act as a normal Human
-			@useshell = true;
+	class UI <   ::Ncurses::UI
+		def take_turn
+			nil until (event = request_inbound_package).match /[wasd]/
+			outbound_package $thisgame
+			case event
+				when 'w' then  Proc.new { Move.down(controls["character"])  } 
+				when 'd' then  Proc.new { Move.left(controls["character"])  }
+				when 'a' then  Proc.new { Move.right(controls["character"]) } 
+				when 's' then  Proc.new { Move.up(controls["character"])    } 
+			end
+			
 		end
-		while(1)
-		@ui.render
-		unless (@ui.sendchar(@ui.getevent()))
-			@useshell = false;
-			return super(@ui.getevent())
-		end
+		def request_inbound_package
+			str = super
+			str.is_a?(String) ? str : ''
 		end
 	end
-
-	class INTERACTIVEUI < ::Ncurses::UI
+	class Channel < ::Ncurses::Channel
+		def initialize(input)
+			super(input)
+			@view = View.new
+		end
+		def outbound_package(package)
+			@view.recieve_package sanitize(package)
+		end
+	end	
+	class View < ::Ncurses::View
 		attr_accessor :iline,:stream
 		def initialize(owner = nil)
 			super()
@@ -46,16 +46,19 @@ class SuperHuman_DEBUG < Human
 			@stream = Array.new(0,"")
 			@owner = owner
 		end
-		def render
+		def recieve_package package
+			render package
+		end
+		def render package
 			Ncurses.nl
-			render_mainwindow
-			render_character_ui
-			render_shell
+			render_mainwindow package
+			render_character_ui package
+			render_shell package
 			Ncurses.nl
 			Ncurses.refresh
 		end
-		def render_shell
-			rowtop = $thisgame.map.rows + 3
+		def render_shell game
+			rowtop = game.map.rows + 3
 			r = 0;# stream.length;
 			stream.each do |l|
 				Ncurses.setpos(rowtop+r,0)
@@ -66,9 +69,9 @@ class SuperHuman_DEBUG < Human
 			Ncurses.addstr("TILES>>> #{iline}")
 			#Ncurses.mvaddstr(rowtop+stream.length+1,0,">>#{iline}")
 		end
-		def render_character_ui
-			return nil if @owner.nil?
-			left_col = $thisgame.map.columns + 3
+		def render_character_ui game
+			@owner = game.players[0]
+			left_col = game.map.columns + 3
 			Ncurses.setpos(0,left_col)
 			Ncurses.addstr("Player 1")
 			Ncurses.setpos(1,left_col)	

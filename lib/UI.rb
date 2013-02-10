@@ -9,27 +9,36 @@ class UI
 	attr_accessor :owner
 	def initialize		
 	end
-	def render
-	end
 	def close
 	end
-	def getevent
-	end
 	def setup
+	end
+	def take_turn
+		Proc.new {}
 	end
 ##### Required UI Channel interaction methods
 	def inbound_package package
 	end
 	def outbound_package package
-		@send_package_method.call package
+		@channel.outbound_package.call(package)
 	end
-	def send_package_method= method
-		@send_package_method= method.to_proc
+	def request_inbound_package
+		@channel.request_inbound_package.call
+	end
+	def channel=(channel)
+		@channel= channel
+	end
+	private
+	def channel
 	end
 end
 class View
+	def close; end
+	def setup; end
+	def receive_package(package); end
 end
 class Channel
+
 	private_class_method :new
 	def self.new_channel_creation
 		lambda { |ui_inbound| new ui_inbound }
@@ -42,6 +51,8 @@ class Channel
 	end
 	def initialize(ui_inbound)
 		@inbound = ui_inbound.to_proc
+	end
+	def request_inbound_package
 	end
 	#######
 	protected
