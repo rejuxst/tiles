@@ -1,4 +1,3 @@
-require 'database'
 # Core access methodology:
 # 
 class UI
@@ -8,8 +7,7 @@ class UI
 # Channel (Like a translator but non-modifiable or creatable from a UI)
 # 
 	attr_accessor :owner
-	def initialize
-		
+	def initialize		
 	end
 	def render
 	end
@@ -19,26 +17,31 @@ class UI
 	end
 	def setup
 	end
+##### Required UI Channel interaction methods
+	def inbound_package package
+	end
+	def outbound_package package
+		@send_package_method.call package
+	end
+	def send_package_method= method
+		@send_package_method= method.to_proc
+	end
 end
 class View
 end
 class Channel
-	def request_input_from_end_user()
-		# This depends on the targetted end user profile
+	private_class_method :new
+	def self.new_channel_creation
+		lambda { |ui_inbound| new ui_inbound }
 	end
-	def send_to_end_user(output)
-		# This depends on the targetted end user profile
+	def outbound_package package
+		sanitize package
 	end
-	def send_to_ui(input_stream)
-		@ui.send(sanitize(input_stream))
+	def inbound_package package
+		@inbound.call(sanitize( package ) )
 	end
-	########
-	protected
-	########
-	def initialize(ui_inbound,ui_outbound)
-		raise "Target_ui is not a UI it is a #{target_ui.class}" unless target_ui.is_a? UI
-		@ui = target_ui
-		@profile = target_user_profile
+	def initialize(ui_inbound)
+		@inbound = ui_inbound.to_proc
 	end
 	#######
 	protected
