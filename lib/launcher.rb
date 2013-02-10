@@ -49,12 +49,12 @@ class << self
 	def setup		
 		load_application_from @opts[:app_dir]
 		@manager = Tiles::Application::Manager.new
-		@manager.register_new_channel("Channel",Channel.new_channel_creation)
+
 		game = eval(@game_string.to_s.capitalize) #TODO:This is a HUGE security flaw fix it
 		raise "#{game} is not a Tiles::Game" unless game <= Game
 		@game = game.new
 		self.freeze
-		@input_blk.call @game unless @input_blk.nil?
+		@input_blk.call @game, @manager unless @input_blk.nil?
 
 	end
 	def debug_mode?
@@ -62,6 +62,9 @@ class << self
 	end
 	def game
 		@game
+	end
+	def manager
+		@manager
 	end
 ############################
 	private
