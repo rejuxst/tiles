@@ -12,10 +12,8 @@ class Game
 		add_reference		"map", Map.new,	:add_then_reference => true
 		add_reference_set 	"players",[],	:add_then_reference => true	
 		add_reference_set 	"things",[],	:add_then_reference => true
-		add_reference_set 	"views",[],	:add_then_reference => true
 	end
 	def start
-		views.each {|v| v.setup }	
 	end
 	def run_once
 		# players take their turn
