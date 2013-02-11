@@ -17,14 +17,16 @@ class Game
 	def start
 		views.each {|v| v.setup }	
 	end
-	def run
-		while 1
-			# players take their turn
-			players.each { |p| p.take_turn if p.turn == turn}
-			process_events
-			actors_take_turns	# all uncontrolled actors take their turn
-			self.turn.value = self.turn + 1
-		end
+	def run_once
+		# players take their turn
+		players.each { |p| p.take_turn if p.turn == turn}
+		process_events
+		actors_take_turns	# all uncontrolled actors take their turn
+		turn.value= turn + 1
+		status()
+	end
+	def status
+		:good
 	end
 	def process_events
 	

@@ -15,15 +15,10 @@ class << self
 		@input_blk = blk
 		@opts = opts
 		safe_level = opts[:safe_level] if opts[:safe_level].class <= Fixnum
-		#@game_thread = Thread.new(0 || safe_level) do |safe_level| 
-		#^ Threading seems to slow it down alot
-			$SAFE = safe_level
-			Tiles::Launcher.setup
-			Tiles::Launcher.run
-		#	Thread.stop
-		#end
-		#@game_thread.join
-		#sleep 0.1 while @game_thread.status != 'sleep'
+		#$SAFE = safe_level
+		Tiles::Launcher.setup
+		Tiles::Launcher.run
+
 	rescue Exception => e
 		if debug_mode?
 			enter_debug_mode 
@@ -34,9 +29,7 @@ class << self
 		#Thread.kill(@game_thread)
 	end
 	def run
-		@game.start
-		@game.run
-		@game.stop
+		@application.run
 	end
 	def load_tiles_library(opts = {})
 		case opts[:load_source]
@@ -48,13 +41,15 @@ class << self
 	end
 	def setup		
 		load_application_from @opts[:app_dir]
-		@manager = Tiles::Application::Manager.new
-
+		@input_blk = Proc.new {} if @input_blk.nil?
 		game = eval(@game_string.to_s.capitalize) #TODO:This is a HUGE security flaw fix it
 		raise "#{game} is not a Tiles::Game" unless game <= Game
 		@game = game.new
+		@application = Tiles::Application.new( 
+				:game => @game,
+				:valid_channels => ["Channel", "Ncurses::Channel"]) { |g,a| @input_blk.call(g,a) }
 		self.freeze
-		@input_blk.call @game, @manager unless @input_blk.nil?
+
 
 	end
 	def debug_mode?
@@ -114,7 +109,7 @@ Failed to load file correctly #{File.join(ent.to_path,f.partition('.')[0])} :
 		if @game.nil?
 			binding.pry
 		else
-			@game.pry
+			@application.pry
 		end	
 	end
 	def game_loop(game_string)
