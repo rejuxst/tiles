@@ -13,7 +13,6 @@ class SuperHuman_DEBUG < Human
 	class UI <   ::Ncurses::UI
 		def take_turn
 			nil until (event = request_inbound_package).match /[wasd]/
-			outbound_package $thisgame
 			case event
 				when 'w' then  Proc.new { Move.down(controls["character"])  } 
 				when 'd' then  Proc.new { Move.left(controls["character"])  }
@@ -27,29 +26,22 @@ class SuperHuman_DEBUG < Human
 			str.is_a?(String) ? str : ''
 		end
 	end
-	class Channel < ::Ncurses::Channel
-		def initialize(input)
-			super(input)
-			@view = View.new
-		end
-		def outbound_package(package)
-			@view.recieve_package sanitize(package)
-		end
-	end	
+	class Channel < ::Ncurses::Channel; end	
 	class View < ::Ncurses::View
 		attr_accessor :iline,:stream
-		def initialize(owner = nil)
+		def initialize(opts = {})
 			super()
 			@__ccontext = self
 			@iline = ""
 			@max_length = 15
 			@stream = Array.new(0,"")
-			@owner = owner
+			@owner = opts[:player]
+			@game = opts[:game]
 		end
 		def recieve_package package
 			render package
 		end
-		def render package
+		def render package = @game
 			Ncurses.nl
 			render_mainwindow package
 			render_character_ui package
@@ -67,10 +59,8 @@ class SuperHuman_DEBUG < Human
 			end
 			Ncurses.setpos(rowtop+stream.length,0)
 			Ncurses.addstr("TILES>>> #{iline}")
-			#Ncurses.mvaddstr(rowtop+stream.length+1,0,">>#{iline}")
 		end
 		def render_character_ui game
-			@owner = game.players[0]
 			left_col = game.map.columns + 3
 			Ncurses.setpos(0,left_col)
 			Ncurses.addstr("Player 1")

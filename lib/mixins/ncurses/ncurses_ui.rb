@@ -81,16 +81,11 @@ class Ncurses::UI < UI
 	end
 end
 class Ncurses::Channel < Channel
-	def initialize(input)
-		@view ::Ncurses::View.new
-		super(input)
-	end
-
 	def request_inbound_package
 		 Ncurses.getch
 	end
 	def outbound_package(package)
-		@view.receive_package sanitize(package)
+		 sanitize(package)
 	end
 end
 

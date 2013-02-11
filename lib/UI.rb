@@ -19,38 +19,35 @@ class UI
 ##### Required UI Channel interaction methods
 	def inbound_package package
 	end
+	def outbound_package=(input)
+		@outbound_package = input.to_proc
+	end
 	def outbound_package package
-		@channel.outbound_package.call(package)
+		@outbound_package.call(package)
+	end
+	def request_inbound_package=(input)
+		@request_inbound_package = input.to_proc
 	end
 	def request_inbound_package
-		@channel.request_inbound_package.call
-	end
-	def channel=(channel)
-		@channel= channel
+		@request_inbound_package.call
 	end
 	private
-	def channel
-	end
+
 end
 class View
 	def close; end
 	def setup; end
-	def receive_package(package); end
+	def render; end
 end
 class Channel
-
-	private_class_method :new
-	def self.new_channel_creation
-		lambda { |ui_inbound| new ui_inbound }
-	end
 	def outbound_package package
 		sanitize package
 	end
+	def inbound_package= meth
+		@inbound = meth.to_proc
+	end
 	def inbound_package package
 		@inbound.call(sanitize( package ) )
-	end
-	def initialize(ui_inbound)
-		@inbound = ui_inbound.to_proc
 	end
 	def request_inbound_package
 	end
