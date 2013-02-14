@@ -1,7 +1,7 @@
 require 'pry'
-class Test_Equation < Tiles_Test
-	def test_simple_equations
-		
+class Test_Equation < Test::Unit::TestCase
+	Tiles::Application::Configuration.use_default_configuration rescue nil
+	def test_simple_equations		
 		assert_equal 3	,Equation.new('2+1').resolve	
 		assert_equal 3	,Equation.new('(2+1)').resolve	
 		assert_equal 5	,Equation.new(' 4 + 1').resolve

@@ -1,8 +1,11 @@
+require 'config'
 require 'pry'
 require 'rexml/document'
 require 'rexml/element'
 module Database
-
+### Making Database Configurable ###
+  extend Tiles::Configurable
+####################################
 ### Class Functions ################
   def self.read_db(xmlstring)	
   end
@@ -32,15 +35,23 @@ module Database
 	return @database_entry_types[the_class] rescue nil
   end
 #####################################
+configuration_method :add_database_entry_class, :set_assign_key
 ### General Setup ##################
-self.add_database_entry_class(Class) { |ky|  @db[ky].nil?() ? nil : @db[ky].resolve }
+#self.add_database_entry_class(Class) { |ky|  @db[ky].nil?() ? nil : @db[ky].resolve }
 #self.add_database_entry_class(Symbol) { |ky| @db[ky] }
-self.add_database_entry_class(Fixnum) { |ky| @db[ky] }
-self.add_database_entry_class(String) do |ky| 
+#self.add_database_entry_class(Fixnum) { |ky| @db[ky] }
+#self.add_database_entry_class(String) do |ky| 
+#self.set_assign_key do 
+default_configuration_call(:add_database_entry_class,
+		Class) { |ky|  @db[ky].nil?() ? nil : @db[ky].resolve }
+default_configuration_call(:add_database_entry_class,
+		Fixnum) { |ky| @db[ky] }
+default_configuration_call(:add_database_entry_class,
+		String) do |ky| 
 	temp = @db[ky]
 	(temp.is_a?(Reference)) ? temp.resolve : temp
 end
-self.set_assign_key do 
+default_configuration_call(:set_assign_key) do 
 	@max_key = 0 if @max_key.nil?
 	@max_key = @max_key + 1
 end
