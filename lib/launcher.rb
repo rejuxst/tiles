@@ -41,13 +41,15 @@ class << self
 	end
 	def setup		
 		load_application_from @opts[:app_dir]
+		@configuration= Tiles::Application::Configuration.last_config || 
+				Tiles::Application::Configuration.use_default_configuration 
 		@input_blk = Proc.new {} if @input_blk.nil?
 		game = eval(@game_string.to_s.capitalize) #TODO:This is a HUGE security flaw fix it
 		raise "#{game} is not a Tiles::Game" unless game <= Game
 		@game = game.new
 		@application = Tiles::Application.new( 
-				:game => @game,
-				:valid_channels => ["Channel", "Ncurses::Channel"]) { |g,a| @input_blk.call(g,a) }
+			:game => @game,
+			:valid_channels => ["Channel", "Ncurses::Channel"]) { |g,a| @input_blk.call(g,a) }
 		self.freeze
 
 

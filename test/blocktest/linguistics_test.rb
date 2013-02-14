@@ -4,8 +4,9 @@ require 'treetop'
 require 'treetop/linguisticsparser.treetop'
 require 'lang/english'
 require 'lang/englishparser'
-class Test_Linguistics < Tiles_Test
+class Test_Linguistics < Test::Unit::TestCase
 	#assert_nothing_raised("Parser failed to load") { ::Linguistics.parser= ::LinguisticsParser.new }
+	Tiles::Application::Configuration.use_default_configuration rescue nil
 	::Linguistics.parser= ::LinguisticsParser.new 
 	def test_equation_syntax
 		# These Should compile without failure

@@ -9,6 +9,8 @@ class Tiles::Application
 		opts[:valid_channels].each { |ch| register_new_channel_class ch } if (opts[:valid_channels] || "").is_a? Array
 		@game = opts[:game]
 		yield @game,self if block_given?
+		@configuration= Tiles::Application::Configuration.last_config || 
+				Tiles::Application::Configuration.use_default_configuration 
 		freeze_channel_list
 	end
 	def run

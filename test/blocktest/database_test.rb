@@ -1,6 +1,7 @@
 require 'pry'
 #require 'test/unit'
-class Test_Database < Tiles_Test
+class Test_Database < Test::Unit::TestCase
+	Tiles::Application::Configuration.use_default_configuration
 	attr_accessor :t3
 	def non_interactive?
 		return false
