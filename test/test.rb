@@ -53,11 +53,25 @@ begin
 			end
 		end 
 	  end
-
+	  opts.on("-o","--look-test","Open the test file using default editor") do
+		ARGV.each do |b| 
+		system("/usr/bin/env $EDITOR #{File.join(blkt,b.downcase + "_test.rb")}") 
+		end
+		exit
+	  end
+	  opts.on("-i","--interactive","Load the tiles library and drop into pry") do
+		binding.pry
+		exit
+	  end
+	  opts.on("-r","--application","Run /testapp/main application") do
+		load File.join(blkt,'..','testapp','main.rb')
+		exit
+	  end
 
 
 	end
 	(ARGV.empty?) ? puts(op.banner) : op.parse!
+	Kernel.puts "Testing on: #{RUBY_ENGINE}@#{RUBY_VERSION}"
 	ARGV.each do |block|
 		require_test_library
 		puts "Test::Unit::TestCase ===> #{block}"

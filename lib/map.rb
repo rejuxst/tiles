@@ -4,41 +4,38 @@ class Map
 	include Generic::Base
 	include Generic::Responsive
 	include Active
-	attr_reader :rows,:columns # number of rows and columns of tiles in the map
-	attr_reader :parent, :maps # list of lower level maps
-	attr_reader :tiles
-	
+#	attr_reader :rows,:columns # number of rows and columns of tiles in the map
+#	attr_reader :parent, :maps # list of lower level maps
+#	attr_reader :tiles
+	add_initialize_loop do |*args|
+		add_reference_set "tiles", [] , :add_then_reference => true
+		add_reference_set "maps",  [] , :add_then_reference => true
+		add_variable   "columns", 20
+		add_variable   "rows"	, 20
+
+	end
 #	def initialize
 #		@parent = nil
 #		init
 #	end
 	def init
-		@parent = nil
-		@rows = 	20
-		@columns = 	20
-		@tiles = Array.new(@rows) do |e|
-			e = Array.new(@columns) {Tile.new(:ASCII => ".",:owner => self)}
-		end
-		@tiles.flatten.each { |t| add_to_db t }
+
 	end
 	# Tile access and manipulation functions 
 	def tile(r,c)
-		return nil if (r > @rows || r < 0) || (c > @columns || c < 0)
-		if block_given?
-			@tiles[r][c] = yield @tiles[r][c] 
-		else
-			return @tiles[r][c]
-		end
+		tiles[r,c]
 	end
-	
+	# This function doesn't work!!! not a valid function input	
 	def tile=(r,c,input)
-		@tiles[r][c] = input 
+		tiles.add([], :make_subset => r) if tiles[r].nil?
+		tiles[r].add(input, :key => c)
+		#@tiles[r][c] = input 
 	end	
 	
 	def find_tile(args={},&blk)
 		sol = {:tile => nil, :r => 0, :c => 0}
-		@rows.times do |r|
-			@columns.times do |c|
+		rows.times do |r|
+			columns.times do |c|
 				if yield tile(r,c)
 					sol[:tile] = tile(r,c)
 					sol[:r]	= r

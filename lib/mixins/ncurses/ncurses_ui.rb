@@ -59,7 +59,7 @@ class Ncurses::View < View
 					#Ncurses.mvaddstr(x, y, "#{($thisgame.map.tile(x,y)).ASCII}") 
 				else
 					actors = game.map.tile(x,y).find_if {|t| t.class <= Actor}
-					c = game.map.tile(x,y).find_if { |t| true }
+					c = game.map.tile(x,y)
 					c = actors if !actors.nil? 
 					Ncurses.setpos(x,y)
 					Ncurses.addstr("#{c.ASCII}")
