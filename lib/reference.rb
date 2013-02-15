@@ -1,5 +1,9 @@
 require 'pry'
 require 'database'
+# TODO: Set shoudl probably become a database itself because there is a clear need for 
+#	References to be blank (with a key). For Example lets say the game wants a list of all
+#	objects 'controlled' by all the players there would need to be a bunch of references 
+#	that the game doesn't need to know about but have to exist to maintain connectivity
 class Database::Reference
 	@@valid_reference_classes = [String, Class]
 	def self.add_valid_reference_class(the_class)
@@ -16,7 +20,6 @@ class Database::Reference
 	end
 	def initialize(source,target,opts = {}, &blk)
                 # Input validation checks
-#		binding.pry
 		raise "Source location is not a Database Reference cannot be generated" if !Database.is_database?(source)
 #		raise "Target location is not a Database Try making a local reference" if !Database.is_database?(target)
                 @source = source
@@ -25,8 +28,8 @@ class Database::Reference
 	end
 	def resolve
 		return @blk.call(@source,@target) unless @blk.nil?
-		return @target if @target.db_alive? and @source.db_alive?
-		return nil
+		return @target if @target.db_alive? and @source.db_alive? rescue nil
+		nil
 	end
 	class Chain < ::Database::Reference
 		def initialize(source,target_chain,opts = {}, &blk)
@@ -70,9 +73,10 @@ class Database::Reference
 			@hash = {}
 			i = -1
 			case data
-			when Array then data.each { |d| @hash[(i+= 1)] = d } 
-			when Hash  then data.each_pair { |k,d| @hash[k] = d }
-			else raise "Input initialization set is not a Array or Hash when creating #{self.class}"
+				when Array then data.each { |d| add d, :key => (i += 1) } 
+				when Hash  then data.each_pair { |k,d| add d, :key => k }
+				else 
+				raise "Input initialization set is not a Array or Hash when creating #{self.class}"
 			end
 		end
 		def each &blk
@@ -90,25 +94,62 @@ class Database::Reference
 		def [](*ind)
 			index(*ind)
 		end
+		def []=(*ind,value)
+			#NOTE: Not sure if this should be a valid semantic
+			add(value, :key => ind)
+		end
 		def index(*ind)
-			ind.inject(@hash) { |h,ele| h[ele] }
+			@hash[ind]  
+			#|| if ind.length > 1
+			#	binding.pry		
+			#	ind.collect {|i| index(i) }
+			#else
+			#	nil
+			#end
+			#@hash[(ind.length >
+			#ind.inject(@hash) { |h,ele| h[ele] } rescue nil
 		end
 		def add(item, opts = {})
+			item = @source.add_reference_set(nil,item) and 
+				opts[:key] ||= opts[:make_subset] unless opts[:make_subset].nil?
 			@source.add_to_db(item) if item.db_parent.nil?
-			if opts[:key].nil?
-				i = 0;	(i  += 1) until @hash[i].nil? 	
-				@hash[i] = item
-			else
-				@hash[opts[:key]] = item 
-			end
+			@hash[ 
+				case opts[:key]
+					when nil then  	[empty_key ]
+					when Array then  opts[:key]
+					else	    	[opts[:key]]
+				end 
+			] = item
 			self
 		end
 		def delete(object)
 			@hash.delete_if	{ |k,v| object == k or object == v} 
 		end
 		def resolve
-			@hash.delete_if { |k,ele| !ele.db_alive? }
+			@hash.delete_if do |k,ele| 
+				!ele.db_alive? || 
+				(ele.is_a?(::Database::Reference) && ele.db_parent != self.db_parent)
+			end
 			self
+		end
+		def what_died?
+			return @source if not @source.db_alive? 
+			return @target if resolve.nil?
+			return nil
+		end
+		def db_parent
+			@source
+		end
+		def db_alive?
+			@source.db_alive?
+		end
+		private 
+		def empty_key
+			i = 0;  (i  += 1) while hash.has_key? i
+			i
+		end
+		def hash
+			@hash ||= {}
 		end
 	end
 	class Variable < ::Database::Reference

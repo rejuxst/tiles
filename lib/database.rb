@@ -2,10 +2,20 @@ require 'config'
 require 'pry'
 require 'rexml/document'
 require 'rexml/element'
+#TODO: 
+#	- Add private/public/protected db access
+#	- Modify default setup for acceptabble key values (i.e exclude '#' from reference names to support equation)
+#	- Add module level and instance level security protocols
+#	- MAYBE switch to class inheritance model over module (most of the semantic associated with db suggest this)
+#	- Deal with handling  save/loading with regards to configuration and initializiation.
+#	- Adjust the semantic to allow for classes to be databases as well
+#	- Allow for indexing with multiple values
 module Database
+
 ### Making Database Configurable ###
   extend Tiles::Configurable
 ####################################
+
 ### Class Functions ################
   def self.read_db(xmlstring)	
   end
@@ -195,11 +205,11 @@ end
 	db.each_pair { |k,val|	return k if val.object_id == input.object_id }
 	return nil
   end
-  def db_get(ky)	
+  def db_get(ky)
 	return instance_exec ky, &Database[ky.class]
   end
-  def [](ky)
-	return db_get(ky)
+  def [](*ky)
+	ky.inject(self){ |d,k| d.db_get(k) } rescue nil
   end
 ################## Missing Method #################################
   # Allows for dynamic declaration of singleton methods to access references
@@ -253,6 +263,7 @@ end
   end
 ############## Misc Functions ##################################
   def inspect
-	"#<#{self.class}:0x#{object_id.to_s(16)}| db: size(#{@db.length}) => References: #{@db.count{|ky,val| val.class <= Reference}}>"
+"#<#{self.class}:0x#{object_id.to_s(16)} | db: size(#{@db.length}) => References: #{@db.count{|ky,val| val.class <= Reference}}>"
   end
+
 end

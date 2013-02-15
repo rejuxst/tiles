@@ -1,4 +1,5 @@
 require 'database'
+#TODO: Deal with issues regarding class inheritance 
 module Generic
 	module Base
 	#generic contains methods global to all instanciated objects

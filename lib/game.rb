@@ -40,21 +40,15 @@ class Game
 			end
 		end
 		mapproc = Proc.new() do |t,&y|			# Recursive actor check
-			if t.turn == turn # check current
-				t.take_turn
-			end
-			if !t.maps.nil?					  # Recursion to submaps
-				t.maps.each {|q| y.call(q,&y)}
-			end
+			t.take_turn if t.turn == turn # check current
 			t.for_each_instance { |t| turnproc.call(t,&turnproc) }	# check the things
 			# check the tiles (:tiles => tiles[:column] => tile.things)
-			t.tiles.each { |ti| ti.each { |t2| t2.for_each_instance { |t3| turnproc.call(t3,&turnproc)}}}
+			#t.tiles.each { |t| t.for_each_instance { |t3| turnproc.call(t3,&turnproc) }   }
 		end
 		things.each { |b| print(b)}
 		things.each { |t| turnproc.call(t,&turnproc) }# Find all the things in the main map
 		mapproc.call(map,&mapproc)			# Find all the actors in all the maps
 	end
 	def stop
-		views.each {|v| v.close}
 	end
 end
