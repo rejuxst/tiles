@@ -42,11 +42,18 @@ class SuperHuman_DEBUG < Human
 			render package
 		end
 		def render package = @game
+				@t1 = Time.now
 			Ncurses.nl
 			render_mainwindow package
 			render_character_ui package
 			render_shell package
 			Ncurses.nl
+				left_col = package.map.columns + 3
+				Ncurses.setpos(3,left_col)
+				Ncurses.addstr("Time since last render: #{((@t2 || @t1)  - @t1) * -1000.0}")
+				@t2 = Time.now
+				Ncurses.setpos(4,left_col)
+				Ncurses.addstr("Time this render: #{(@t1 - @t2) * -1000.0}")
 			Ncurses.refresh
 		end
 		def render_shell game
