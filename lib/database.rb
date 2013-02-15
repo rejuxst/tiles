@@ -2,6 +2,7 @@ require 'config'
 require 'pry'
 require 'rexml/document'
 require 'rexml/element'
+
 #TODO: 
 #	- Add private/public/protected db access
 #	- Modify default setup for acceptabble key values (i.e exclude '#' from reference names to support equation)
