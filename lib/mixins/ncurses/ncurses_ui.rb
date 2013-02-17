@@ -51,19 +51,15 @@ class Ncurses::View < View
 		Ncurses.refresh
 	end
 	def render_mainwindow game
-		game.map.rows.times do |x|
-			game.map.columns.times do |y|
-				if	game.map.tile(x,y).db_empty?
-					Ncurses.setpos(x,y)
-					Ncurses.addstr("#{($thisgame.map.tile(x,y)).ASCII}")
-					#Ncurses.mvaddstr(x, y, "#{($thisgame.map.tile(x,y)).ASCII}") 
-				else
-					actors = game.map.tile(x,y).find_if {|t| t.class <= Actor}
-					c = game.map.tile(x,y)
-					c = actors if !actors.nil? 
-					Ncurses.setpos(x,y)
-					Ncurses.addstr("#{c.ASCII}")
-				end
+		r = game.map.rows
+		c =  game.map.columns
+		r.times do |x|
+			c.times do |y|
+				Ncurses.setpos(x,y)
+				t = game.map.tile(x,y)
+				Ncurses.addstr (
+					(t.find_if {|t| t.class <= Actor} || t).ASCII
+				)
 			end
 		end
 	end

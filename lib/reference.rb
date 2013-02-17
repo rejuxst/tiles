@@ -99,15 +99,12 @@ class Database::Reference
 			add(value, :key => ind)
 		end
 		def index(*ind)
-			@hash[ind]  
-			#|| if ind.length > 1
-			#	binding.pry		
-			#	ind.collect {|i| index(i) }
-			#else
-			#	nil
-			#end
-			#@hash[(ind.length >
-			#ind.inject(@hash) { |h,ele| h[ele] } rescue nil
+			ele = @hash[ind]  
+			if ele.respond_to?(:db_alive?) && ele.db_alive?  
+				ele
+			else
+				nil
+			end
 		end
 		def add(item, opts = {})
 			item = @source.add_reference_set(nil,item) and 
@@ -126,10 +123,10 @@ class Database::Reference
 			@hash.delete_if	{ |k,v| object == k or object == v} 
 		end
 		def resolve
-			@hash.delete_if do |k,ele| 
-				!ele.db_alive? || 
-				(ele.is_a?(::Database::Reference) && ele.db_parent != self.db_parent)
-			end
+		#	@hash.delete_if do |k,ele| 
+		#		!ele.db_alive? || 
+		#		(ele.is_a?(::Database::Reference) && ele.db_parent != self.db_parent)
+		#	end
 			self
 		end
 		def what_died?
