@@ -90,9 +90,8 @@ class Ncurses::Channel < Channel
 
 end
 
-if /linux/ === RUBY_PLATFORM || /darwin/ === RUBY_PLATFORM
+if /darwin/ === RUBY_PLATFORM
 module Curses; end if !defined? Curses
->>>>>>> 411e03101fe5e052ed5d59007c60639a03b509c5
 Curses::UI = Ncurses::UI
 Curses::Channel = Ncurses::Channel
 Curses::View = Ncurses::View
