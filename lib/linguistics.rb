@@ -12,27 +12,8 @@ class Language
 	def self.parser
 		@parser
 	end
-	class Dictionary
-		extend Database
-		def self.add_word(word,wordclass) #TODO: Needs lots of improvements
-			add_to_db Definition.new(word,wordclass), word
-		end
-		def self.[]=(key,value)
-			add_word(key,value)
-		end
-		class Definition
-			def initialize(word,wordclass)
-				raise "Invalid Dictionay::Definition input" unless word.is_a? String and wordclass.is_a? String
-				@word = word
-				@wordclass = wordclass
-			end
-			def word
-				@word
-			end
-			def grammer
-				@wordclass
-			end
-		end
+	def self.inherited(subclass)
+		subclass.load_parser
 	end
 	class Grammer
 		extend Database	
@@ -43,35 +24,35 @@ class Language
 			add_class(key,value)
 		end	
 	end
-	class Language::Word < Treetop::Runtime::SyntaxNode
-		attr_accessor :wordclass
-		def self.set_language(lang)
-			@language ||= lang
-		end
-		def self.language
-			@language
-		end
-		def get_dictionary_entry
-			self.class.language::Dictionary[word.strip]
-		end
-		def get_grammer_entry
-			get_dictionary_entry.grammer
-		end
-		def grammer_equation
-			self.class.language::Grammer[get_grammer_entry]
-		end
-		def links
-			wordclass.links
-		end
-		def word
-			text_value.strip
-		end
+end
+class Language::Word < Treetop::Runtime::SyntaxNode
+	attr_accessor :wordclass
+	def self.set_language(lang)
+		@language ||= lang
+	end
+	def self.language
+		@language
+	end
+	def get_dictionary_entry
+		self.class.language::Dictionary[word.strip]
+	end
+	def get_grammer_entry
+		get_dictionary_entry.grammer
+	end
+	def grammer_equation
+		self.class.language::Grammer[get_grammer_entry]
+	end
+	def links
+		wordclass.links
+	end
+	def word
+		text_value.strip
 	end
 end
 
 module Linguistics
 ###### Setup
-	Link = Struct.new( "LinkParserLink", :lcon, :rcon, :length)
+	Link = Struct.new( "LinkParserLink", :lcon, :rcon, :length,:index)
 ###### Class Functions
 	
 	def self.load_parser
@@ -113,9 +94,16 @@ class Linguistics::WordClass < Treetop::Runtime::SyntaxNode
 	def valid?
 		equation.valid?
 	end
+	def disjuncts
+		equation.disjuncts
+	end
 end
 
 class Linguistics::Connector < Treetop::Runtime::SyntaxNode
+####### General ################
+	def inspect
+		"#<#{self.class} : \"#{text_value}\" >"
+	end
 	def list_connectors
 		[self]
 	end
@@ -144,10 +132,22 @@ class Linguistics::Connector < Treetop::Runtime::SyntaxNode
 
 	def matchs?(other,in_direction = :forward)
 		in_direction = {:forward => "+", "+" => "+", :backward => '-', '-' => '-'}[in_direction]
-		other.type.text_value == self.type.text_value 		&& 
-			self.direction.text_value == in_direction 	&& 
-			other.direction.text_value != in_direction 	&& 
-			!other.direction.nil? 
+		direction_match?(other,in_direction)  && upper_match?(other) && lower_match?(other)
+	end
+	def direction_match? other ,in_direction
+		self.direction.text_value == in_direction	&& 
+		!other.direction.nil?				&& 
+		other.direction.text_value != in_direction  	
+	end 
+	def upper_match? other
+		other.type.text_value == self.type.text_value
+	end
+	def lower_match? other
+		mine = (arb.text_value + misc.text_value).each_char.collect { |c| c }
+		theirs = (other.arb.text_value + other.misc.text_value).each_char.collect { |c| c }
+		((mine.length < theirs.length) ? mine : theirs ).length.times.inject(true) do |r,c|
+			r && (mine[c] == theirs[c] || mine[c] == '*' || theirs[c] == '*')  
+		end
 	end
 
 	def pairings
@@ -165,6 +165,9 @@ class Linguistics::Connector < Treetop::Runtime::SyntaxNode
 	def has_pairings?
 		!@pairings.nil?	
 	end
+	def disjuncts
+		[[self]]
+	end
 ###############################
 end
 ###################### Treetop Parse Nodes ##############################
@@ -176,18 +179,32 @@ class Linguistics::DisjunctNode < Treetop::Runtime::SyntaxNode
 		end.flatten + start.list_connectors
 	end
 	def sat?
-	start.sat? && start.valid? && other_terms.elements.all? { |ele| (ele.empty?) ? true : (ele.term.sat? && ele.term.valid?)}
+		start.sat? && start.valid? && 
+		other_terms.elements.all? { |ele| (ele.empty?) ? true : (ele.term.sat? && ele.term.valid?)}
 	end
 	def valid?
-	start.valid? && other_terms.elements.all? { |ele| (ele.empty?) ? true : (ele.term.sat? && ele.term.valid?)}
+		start.valid? && 
+		other_terms.elements.all? { |ele| (ele.empty?) ? true : (ele.term.sat? && ele.term.valid?)}
+	end
+	def disjuncts
+		start.disjuncts + other_terms.elements.collect { |e| e.term.disjuncts } 
 	end
 end
 class Linguistics::OperandsNode < Linguistics::DisjunctNode
 	def sat?
-		an = other_terms.elements.any? { |ele|  !ele.empty? && ele.term.sat? && ele.term.valid? }# Any term satisfied
-		val = other_terms.elements.all? { |ele|  ele.empty? || ele.term.valid? } # All valid
-		start.valid? && val && (start.sat? || an) # Including start validity
+		start.valid? && 	# All valid
+		other_terms.elements.all? { |ele|  ele.empty? || ele.term.valid? }  && 
+		( start.sat? || 	# Any term satisfied
+			other_terms.elements.any? { |ele|  !ele.empty? && ele.term.sat? && ele.term.valid? }
+			)
+		#val && (start.sat? || an) # Including start validity
 	end
+	def disjuncts
+		other_terms.elements.inject(start.disjuncts) do |r,e| 
+			(r.product(e.term.disjuncts)).collect { |a| a.flatten }
+		end
+	end
+
 end
 class Linguistics::OptionalNode < Treetop::Runtime::SyntaxNode
 	def list_connectors
@@ -196,10 +213,16 @@ class Linguistics::OptionalNode < Treetop::Runtime::SyntaxNode
 	def sat?
 		or_rule.valid?
 	end
+	def disjuncts
+		or_rule.disjuncts + [[]]
+	end
 end
 class Linguistics::ParenNode < Treetop::Runtime::SyntaxNode
 	def list_connectors
 		content.nil? ? [] : content.list_connectors
+	end
+	def disjuncts
+		(content.empty?) ?  [[]] : content.disjuncts
 	end
 end
 class Linguistics::Sentence < Treetop::Runtime::SyntaxNode
@@ -212,11 +235,11 @@ class Linguistics::Sentence < Treetop::Runtime::SyntaxNode
 	def links
 		@links
 	end
-	def links(index)
+	def link(index)
 		@links[index]
 	end	
 	def parse
-		generate_linkage 
+		@parse_status ||= generate_linkage
 	end
 ####################################
 	private
@@ -233,18 +256,18 @@ class Linguistics::Sentence < Treetop::Runtime::SyntaxNode
 				return set_linkages(possible_link_array) if wordclasses.all? { |w| w.sat? && w.valid? }
 			end
 		end
-		return false
+		return nil
 	end
 	# This function is called on a successful generation of linkages and sets up the sentence 
 	def set_linkages(possible_link_array)
-		(0...words.length).each{ |i| words[i].wordclass = wordclasses[i] }
+		words.length.times{ |i| words[i].wordclass = wordclasses[i] }
 		@links = possible_link_array.collect do |lk| 
-			link = Linguistics::Link.new(lk[:forward],lk[:backward], lk[:b_index] - lk[:f_index]) 
+			link = Linguistics::Link.new(lk[:forward],lk[:backward], lk[:b_index] - lk[:f_index],lk[:f_index]) 
 			lk[:backward].add_link(link) 
 			lk[:forward].add_link(link) 
 			link
 		end
-
+		true
 	end
 	def wordclasses
 		@wordclasses ||= words.collect {|ele| ele.is_a?(Linguistics::WordClass) ? ele.copy : ele.grammer_equation.copy}
@@ -253,8 +276,8 @@ class Linguistics::Sentence < Treetop::Runtime::SyntaxNode
 	def create_linkages_table()
 		link_list = []
 		# Generate All possible combintations
-		(0..(wordclasses.length-1)).each do |outer|
-			(0..(wordclasses.length-1)).each do |inner|
+		wordclasses.length.times do |outer|
+			wordclasses.length.times do |inner|
 				next if outer >= inner
 				oconn = wordclasses[outer].connectors
 				iconn = wordclasses[inner].connectors
