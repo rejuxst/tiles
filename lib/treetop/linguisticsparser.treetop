@@ -18,6 +18,6 @@ grammar Linguistics
 		' '* '(' ' '* content:or_rule? ' '* ')'  <ParenNode>
 	end
 	rule connector
-		multiple:'@'? type:[A-Z] arb:'*'* misc:[a-z]* direction:[+-] <Connector>
+		multiple:'@'? type:[A-Z]+ arb:'*'* misc:[a-z]* direction:[+-] <Connector>
 	end
 end

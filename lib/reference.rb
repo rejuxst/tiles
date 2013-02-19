@@ -81,8 +81,9 @@ class Database::Reference
 		end
 		def each &blk
 			@hash.each do |key,ele| 
+				next unless !ele.respond_to?(:db_alive?) || ele.db_alive?() 
 				if block_given?  
-					(blk.parameters.length < 2) ? blk.call(ele) : blk.class(key,ele)
+					(blk.parameters.length < 2) ? blk.call(ele) : blk.call(key,ele)
 				else
 					yield(key,ele) 
 				end
@@ -99,12 +100,8 @@ class Database::Reference
 			add(value, :key => ind)
 		end
 		def index(*ind)
-			ele = @hash[ind]  
-			if ele.respond_to?(:db_alive?) && ele.db_alive?  
-				ele
-			else
-				nil
-			end
+			ele = @hash[ind]
+			( ele.respond_to?(:db_alive?) && ele.db_alive?() ) ? ele : nil
 		end
 		def add(item, opts = {})
 			item = @source.add_reference_set(nil,item) and 

@@ -1,7 +1,6 @@
 grammar EnglishLanguage
 	rule sentence
 		first:word_chain '.'?  <::English::Sentence>
-#		 ( (' '* word)  / comma / semi_colon )*  '.'? <::English::Sentence>
 	end	
 	rule word_chain
 		word:word [\s]* next:word_chain? 

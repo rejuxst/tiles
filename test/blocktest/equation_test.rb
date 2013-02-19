@@ -1,6 +1,6 @@
 require 'pry'
 class Test_Equation < Test::Unit::TestCase
-	Tiles::Application::Configuration.use_default_configuration rescue nil
+	Tiles::Application::Configuration.use_default_configuration rescue nil # Standardized use of Database requires this config call
 	def test_simple_equations		
 		assert_equal 3	,Equation.new('2+1').resolve	
 		assert_equal 3	,Equation.new('(2+1)').resolve	
@@ -17,7 +17,7 @@ class Test_Equation < Test::Unit::TestCase
 	end
 	def test_variable
 		# Test Object
-		thing = Thing.new
+		thing = Thing.new # Thing is used in this context primaryly because it is a Database and a Generic
 		thing.add_reference "item", Thing.new , :add_then_reference => true
 		thing.item.add_variable "value", 0
 		eq = Equation.new("value + 2")

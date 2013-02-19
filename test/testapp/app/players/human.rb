@@ -18,6 +18,7 @@ class SuperHuman_DEBUG < Human
 				when 'd' then  Proc.new { Move.left(controls["character"])  }
 				when 'a' then  Proc.new { Move.right(controls["character"]) } 
 				when 's' then  Proc.new { Move.up(controls["character"])    } 
+				when 't' then
 			end
 			
 		end
@@ -48,24 +49,19 @@ class SuperHuman_DEBUG < Human
 			render_character_ui package
 			render_shell package
 			@t2 = Time.now
-			Ncurses.nl
-				left_col = package.map.columns + 3
-				Ncurses.setpos(3,left_col)
-				Ncurses.addstr("Render Time: #{(@t1 - @t2) * -1000.0} ms")
+			left_col = package.map.columns + 3
+			Ncurses.setpos(3,left_col)
+			Ncurses.addstr("Render Time: #{"%06f" % ((@t1 - @t2) * -1000.0)} ms")
+			Ncurses.addstr(" ") while Ncurses.inch.chr !=  ' '
 			Ncurses.refresh
 		end
 		def render_mainwindow game
-			r = game.map.rows
-			c =  game.map.columns
-			r.times do |x|
-				c.times do |y|
-					Ncurses.setpos(x,y)
-					t = game.map.tile(x,y)
+			game.map.tiles.each do |k,t|
+					Ncurses.setpos(k[0],k[1])
 					Ncurses.addstr (
 						(t.find_if {|t| t.class <= Actor} || t).ASCII
 					)
 				end
-			end
 		end
 		def render_shell game
 			rowtop = game.map.rows + 3
