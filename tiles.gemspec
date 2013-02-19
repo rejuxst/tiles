@@ -7,7 +7,7 @@ Gem::Specification.new do |s|
 		This gem supports rapid development of 2D tile and turn based games for offline
 		and online usage.
 EOF
-  s.add_dependency 'ffi-ncurses', '>= 0.4.0'
+  s.add_dependency 'ncurses-ruby', '>= 1.2.1'
   s.add_dependency 'treetop', '>= 1.4.0'
   s.executables << 'tiles'
   s.authors     = ["Rejuxst"]
