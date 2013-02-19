@@ -20,10 +20,12 @@ class << self
 		Tiles::Launcher.run
 
 	rescue Exception => e
-		Ncurses.echo
-		Ncurses.nocbreak
-		Ncurses.nl
-		Ncurses.endwin
+		if defined? Ncurses
+			Ncurses.echo
+			Ncurses.nocbreak
+			Ncurses.nl
+			Ncurses.endwin if /linux/ === RUBY_PLATFORM
+		end
 		if debug_mode?
 			enter_debug_mode 
 		else
