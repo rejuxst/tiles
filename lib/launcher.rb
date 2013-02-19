@@ -20,6 +20,10 @@ class << self
 		Tiles::Launcher.run
 
 	rescue Exception => e
+		Ncurses.echo
+		Ncurses.nocbreak
+		Ncurses.nl
+		Ncurses.endwin
 		if debug_mode?
 			enter_debug_mode 
 		else
