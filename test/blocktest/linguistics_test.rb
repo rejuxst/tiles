@@ -32,6 +32,18 @@ class Test_Linguistics < Test::Unit::TestCase
 		assert_equal(4,b.list_connectors.length)
 	end 
 
+	def test_cost
+		a =::Linguistics.parse "A+ & B- & C-"
+		b =::Linguistics.parse "A+ & [(B- or G+)] & [[C-]]"
+		ac = a.list_connectors.sort { |x,y| x.cost <=> y.cost }
+		bc = b.list_connectors.sort { |x,y| x.cost <=> y.cost }
+		assert_equal 0 , ac[0].cost
+		assert_equal 0 , ac[1].cost
+		assert_equal 0 , bc[0].cost
+		assert_equal 1 , bc[1].cost
+		assert_equal 2 , bc[3].cost
+	end
+
 	def test_disjunct_list
 		a = ::Linguistics.parse "(A+ or B+) & {C- & (D+ or E-)} & {@F+}"
 		# We should generate a result from this equation
@@ -74,8 +86,8 @@ class Test_Linguistics < Test::Unit::TestCase
 
 	def test_single_connection
 		# Basic equation testing for single connector example in english
-		English::Grammer["adjective"] = "A+"
-		English::Grammer["noun"]   = "A-"
+		English::Grammar["adjective"] = "A+"
+		English::Grammar["noun"]   = "A-"
 		English::Dictionary["large"]  = "adjective"
 		English::Dictionary["dog"]    = "noun"
 		sen = English.parse 'large dog'

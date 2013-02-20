@@ -2,6 +2,8 @@
 require 'optparse'
 require 'pry'
 def require_from_source
+	require 'polyglot'
+	require 'treetop'
 	$LOAD_PATH << File.absolute_path(File.join(File.dirname(__FILE__),'/../lib/'))
 	core = File.join(File.dirname(__FILE__),"..","lib")
 	Dir.open(core) do |ent|
