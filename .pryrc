@@ -1,4 +1,4 @@
-Pry.config.commands.command "dt", "Executes the given block in the current context" do |bind|
+Pry.config.commands.command "dt", "Executes the given block in the current context. Outputs the execution time." do |bind|
 	blk = eval("Proc.new { " + arg_string + "}")
 	cc = eval('self',target)
 	t1 = Time.now

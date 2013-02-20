@@ -40,8 +40,7 @@ class Language::Word < Treetop::Runtime::SyntaxNode
 		get_dictionary_entry.grammar
 	end
 	def grammar_equation
-		Linguistics.parse get_grammar_entry
-#		self.class.language::Grammar[get_grammar_entry]
+		self.class.language::Grammar[get_grammar_entry]
 	end
 	def links
 		wordclass.links
@@ -116,7 +115,7 @@ class Linguistics::Connector < Treetop::Runtime::SyntaxNode
 		(@links ||= []).push(link)
 	end
 	def links
-		@links
+		@links ||= []
 	end
 #################################
 # Support functions for Linkage generation
@@ -267,11 +266,10 @@ class Linguistics::Sentence < Treetop::Runtime::SyntaxNode
 		@links[index]
 	end	
 	def disjunct_parse
-		@parse_status ||= 0
-		 disjunct_linkage_generate
+		@link_list ||= disjunct_linkage_generate
 	end
 	def parse
-		@parse_status ||= generate_linkage
+		@link_list ||= disjunct_parse#generate_linkage
 	end
 ####################################
 	private
@@ -323,15 +321,13 @@ class Linguistics::Sentence < Treetop::Runtime::SyntaxNode
 		end
 		return link_list
 	end
+
 	def disjunct_linkage_generate
 		dis_arr = 	wordclasses.collect { |wc| wc.disjuncts } # collection of disjunct arrays
 		dis_arr = 	prune_disjuncts(dis_arr)		  # Prune disjuncts that can't exist
 		# Use product to generate a list of all combinations of disjuncts that could work
 		link_pool = 	dis_arr.inject([[]]) {|r,e| r.product(e).collect { |q| q.flatten } }
-		binding.pry
 		link_list = 	select_from_link_pool(link_pool)
-		binding.pry
-
 	end
 
 
@@ -347,7 +343,6 @@ class Linguistics::Sentence < Treetop::Runtime::SyntaxNode
 						v[0].direction.text_value == '-'  || 
 						v.last.direction.text_value == '+'}
 			hsh.each { |k,v| _pair_sub_array(v) ; _pair_sub_array(v.reverse) }
-			binding.pry
 			next if ll.any? { |con| !con.sat? || !con.valid? } || 
 				!_valid_lengths?(ll)
 			return ll
@@ -359,7 +354,7 @@ class Linguistics::Sentence < Treetop::Runtime::SyntaxNode
 		# if no bounds given generate default bounds
 		bl = 0 if bl.nil?
 		fl = wordclasses.length if fl.nil?  
-		return true if (bl..fl).to_a.length <= 2 rescue binding.pry 
+		return true if ((bl+1)...fl).to_a.length < 2  
 		# ^Recursive end case when the range of words being checking is empty 
 
 		# Generate hash to allow determining the index of a connector's wordclass
@@ -367,14 +362,13 @@ class Linguistics::Sentence < Treetop::Runtime::SyntaxNode
 		# Generate hash to allow determining the list of connectors in a wordclass (cant use list_connectors
 		#	because some of those are invalid because they arent in the disjunct pool
 		ll.each { |c| (chsh[lhsh[c.wordclass]] ||= []).push c }
-		binding.pry
 		# If any of the words have connectors that point out of the valid range the result if invalid
-		return false if (bl...fl).to_a.any? { |i| chsh[i].any? { |con| 
+		return false if ((bl+1)...fl).to_a.any? { |i| chsh[i].any? { |con| 
 					con.pairings.any? { |k,v| (v.to_s == '+') ? lhsh[k.wordclass] > fl : lhsh[k.wordclass] < bl } } }
 		# Create a dividing point to seperate the words into those inside the longest link and outside the
 		# longest link
 		new_fl = chsh[bl].collect { |con| lhsh[con.pairings.keys.max { |p| lhsh[p.wordclass] }.wordclass] }.max 
-		return	_valid_lengths?( ll , bl+1, new_fl ) && _valid_lengths?(ll,new_fl+1,fl) # test both subsets	
+		return	_valid_lengths?( ll , bl, new_fl ) && _valid_lengths?(ll,new_fl,fl) # test both subsets	
 	end
 
 	# Support pairing function for a link_pool v is the list of connectors (assumed of the same type
