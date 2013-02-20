@@ -3,7 +3,7 @@ require 'polyglot'
 require 'treetop'
 require 'linguistics'
 class English < Language
-	class Grammer < Language::Grammer
+	class Grammar < Language::Grammar
 	end
 	class Dictionary < Language::Dictionary
 	end
@@ -28,10 +28,10 @@ class English < Language
 			words[index]
 		end
 		def nouns
-			words.find_all { |w| English::Dictionary[w.word].grammer == "noun" }
+			words.find_all { |w| English::Dictionary[w.word].grammar == "noun" }
 		end
 		def verbs
-			words.find_all { |w| English::Dictionary[w.word].grammer == "verbs" } 
+			words.find_all { |w| English::Dictionary[w.word].grammar == "verbs" } 
 		end
 		def subject
 			(nouns.find_all { |w| w.is_subject? })[0]

@@ -23,7 +23,7 @@ class Language::Dictionary
 		def word
 			@word
 		end
-		def grammer
+		def grammar
 			@wordclass
 		end
 	end

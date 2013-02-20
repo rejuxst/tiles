@@ -1,9 +1,4 @@
 grammar LanguageCompiler
-#		'' dict:(a:(d:dict_line ' '* ( (';' ' '*) / ("\n"+ ' '*))+ )* l:dict_rule? ) [\s]* {
-#			def entries
-#				(dict.a.empty?() ? [] : dict.a.elements).collect{ |e| e.d } + [dict.l] 
-#			end
-#		}
 	include Linguistics
 	rule dict
 		dict_line* {
@@ -32,15 +27,15 @@ grammar LanguageCompiler
 		[\s]* name:entry_class ' '* ':' ' '* equation:equation  [\s]* (';'+ ('%' .*)?)?  [\s]* <Entry>
 	end
 	rule entry_class
-		class / instance / variable			<EntryName>
+		class / instance / variable			
 	end
 	rule variable
-		'$' [A-Z]+
+		type:'$' [A-Z]+				<EntryName>
 	end
 	rule class
-		'@' [a-z]+ ('#' [a-z]+)*
+		type:'@' [a-z]+ ('#' [a-z]+)*		<EntryName>
 	end
 	rule instance
-		[a-zA-Z_]* ('.' [a-z]+)?
+		type:''	[a-zA-Z_]* ('.' [a-z]+)?	<EntryName>
 	end
 end

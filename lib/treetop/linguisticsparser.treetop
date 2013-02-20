@@ -9,13 +9,16 @@ grammar Linguistics
 		start:primary  other_terms:( ' '* operator:'&' ' '* term:primary    )* <OperandsNode> 
 	end
 	rule primary
-		optional / paren / connector
+		optional / paren / connector / cost
 	end
 	rule optional
 		' '* '{' ' '* or_rule ' '* '}'  <OptionalNode>
 	end
 	rule paren
 		' '* '(' ' '* content:or_rule? ' '* ')'  <ParenNode>
+	end
+	rule cost
+		' '* '[' ' '* content:or_rule? ' '* ']'  <CostNode>
 	end
 	rule connector
 		multiple:'@'? type:[A-Z]+ arb:'*'* misc:[a-z]* direction:[+-] <Connector>
