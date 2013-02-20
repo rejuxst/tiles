@@ -1,0 +1,13 @@
+##########################
+### Overview: Tiles ######
+##########################
+
+Tiles is designed to be a fully customizable game engine with developer support. Its primary function is to facilitate games intended to be played with a highly structured interface and complex interaction, but relatively simple rendering and low frame-rate needs (i.e turn based games or games with mostly static views). It also seeks to change the way in which developers look to achieve game logic. Developement is driven by a property and action based approach that allows intuitive design to lead directly to code.
+
+Intended Features:
+ - Customizable interface using a variety of front-ends
+ - Variable levels of Security for online offline play and online development
+ - Class/Code structure driven by high level language 
+ - Extensive base code for quickly scaffolding games based on genre
+ - Linguisitics Interpreter to facilitate translating between code and development
+
