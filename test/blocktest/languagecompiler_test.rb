@@ -25,6 +25,6 @@ class Test_LanguageCompiler < Test::Unit::TestCase
     			), LanguageCompiler.failure_reason
 	LanguageCompiler.generate_instance_dictionary English, dict0
 	a = English.parse "I ran with the dog"
-	binding.pry
+	a.disjunct_parse
   end
 end

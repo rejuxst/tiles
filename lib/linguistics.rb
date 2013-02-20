@@ -140,11 +140,13 @@ class Linguistics::Connector < Treetop::Runtime::SyntaxNode
 	end
 
 	def pair(other,in_direction = :forward)
+		in_direction = {:forward => "+", "+" => "+", :backward => '-', '-' => '-'}[in_direction]
 		self.add_partner(other,in_direction)
-		other.add_partner(self,(in_direction == :forward) ? :backward : :forward)
+		other.add_partner(self,(in_direction == '+') ? :backward : :forward)
 	end
 
 	def add_partner(other,in_direction = :forward)
+		in_direction = {:forward => "+", "+" => "+", :backward => '-', '-' => '-'}[in_direction]
 		(@pairings ||= {}).merge!( { other => in_direction } )
 	end
 	def ===(other)
@@ -175,11 +177,14 @@ class Linguistics::Connector < Treetop::Runtime::SyntaxNode
 	end
 
 	def sat?
-		!@pairings.nil? && (@pairings.length == 1 || !multiple.nil?) && @pairings.all? { |k,v| self.matchs?(k,v) }
+		!@pairings.nil? && (@pairings.length == 1 || !multiple.nil?) && 
+		@pairings.all? { |k,v| self.matchs?(k,v) }
 	end
 
 	def valid?
-		@pairings.nil? || (@pairings.length == 1 || !multiple.nil?) && @pairings.all? { |k,v| self.matchs?(k,v) }
+		
+		@pairings.nil? || (@pairings.length == 1 || !multiple.nil?) && 
+		@pairings.all? { |k,v| self.matchs?(k,v) && self.wordclass != k.wordclass}
 	end
 
 	def has_pairings?
@@ -342,6 +347,7 @@ class Linguistics::Sentence < Treetop::Runtime::SyntaxNode
 						v[0].direction.text_value == '-'  || 
 						v.last.direction.text_value == '+'}
 			hsh.each { |k,v| _pair_sub_array(v) ; _pair_sub_array(v.reverse) }
+			binding.pry
 			next if ll.any? { |con| !con.sat? || !con.valid? } || 
 				!_valid_lengths?(ll)
 			return ll
@@ -353,21 +359,22 @@ class Linguistics::Sentence < Treetop::Runtime::SyntaxNode
 		# if no bounds given generate default bounds
 		bl = 0 if bl.nil?
 		fl = wordclasses.length if fl.nil?  
-		return true if bl >= fl #Recursive end case when the range of words being checking is empty 
+		return true if (bl..fl).to_a.length <= 2 rescue binding.pry 
+		# ^Recursive end case when the range of words being checking is empty 
 
 		# Generate hash to allow determining the index of a connector's wordclass
 		chsh = {}; lhsh = {}; wordclasses.length.times { |i| lhsh[wordclasses[i]] = i;chsh[i] = [] }	
 		# Generate hash to allow determining the list of connectors in a wordclass (cant use list_connectors
 		#	because some of those are invalid because they arent in the disjunct pool
-		ll.each { (chsh[lhsh[c.wordclass]] ||= []).push c }
-
+		ll.each { |c| (chsh[lhsh[c.wordclass]] ||= []).push c }
+		binding.pry
 		# If any of the words have connectors that point out of the valid range the result if invalid
 		return false if (bl...fl).to_a.any? { |i| chsh[i].any? { |con| 
-					con.pairings.any? { |k,v| (v.to_s == '+') ? k > fl : k < bl } } }
+					con.pairings.any? { |k,v| (v.to_s == '+') ? lhsh[k.wordclass] > fl : lhsh[k.wordclass] < bl } } }
 		# Create a dividing point to seperate the words into those inside the longest link and outside the
 		# longest link
-		new_fl = chsh[bl].max { |con| con.pairings.keys.max { |p| lhsh[p.wordclass] } } - 1
-		return	_valid_lengths( ll , bl, new_fl ) && _valid_lengths(ll,new_fl,fl) # test both subsets	
+		new_fl = chsh[bl].collect { |con| lhsh[con.pairings.keys.max { |p| lhsh[p.wordclass] }.wordclass] }.max 
+		return	_valid_lengths?( ll , bl+1, new_fl ) && _valid_lengths?(ll,new_fl+1,fl) # test both subsets	
 	end
 
 	# Support pairing function for a link_pool v is the list of connectors (assumed of the same type
@@ -380,7 +387,7 @@ class Linguistics::Sentence < Treetop::Runtime::SyntaxNode
 					when v[ip].direction.text_value == id then sd = sd + 1
 					when sd > 0 then sd = sd - 1
 					when sd == 0 
-						v[i].pair(v[ip], id) if v[i].match?(v[ip],id) && 
+						v[i].pair(v[ip], id) if v[i].matchs?(v[ip],id) && 
 									(!v[ip].sat? || v[ip].multiple.nil?) 
 						break if v[i].multiple.nil?
 				end
