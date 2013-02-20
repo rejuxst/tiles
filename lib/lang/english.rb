@@ -40,7 +40,7 @@ class English < Language
 	class Word < Language::Word 
 		set_language English
 		def is_subject?
-			wordclass.connectors.any? { |con| !con.links.empty? && con.type.text_value == 'A' }
+			wordclass.connectors.any? { |con| binding.pry if con.links.nil? ; !con.links.empty? && con.type.text_value == 'A' }
 		end
 		def adjectives
 			(wordclass.connectors.find_all { |con| !con.links.empty? && con.type.text_value == 'A' }

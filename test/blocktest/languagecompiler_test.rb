@@ -16,15 +16,15 @@ class Test_LanguageCompiler < Test::Unit::TestCase
 
 	assert_not_nil dict0 = LanguageCompiler.parse(
      				'
-     				 dog  : {@A-} & Ds- & {@M+ or (R+ & Bs+)} & (J- or Os- or (Ss+ & (({@CO-} & {C-}) or R-)) or SIs-);
+    				 I    : J- or O- or (Sp+ & (({@CO-} & {C-}) or R-)) or SIp-;
     				 ran  : {@E-} & (S- or (RS- & B-)) & {@MV+};
      				 with : J+ & (Mp- or MV- or Pp-);
     				 the  : D+;
-    				 I    : J- or O- or (Sp+ & (({@CO-} & {C-}) or R-)) or SIp-;
+     				 dog  : {@A-} & Ds- & {@M+ or (R+ & Bs+)} & (J- or Os- or (Ss+ & (({@CO-} & {C-}) or R-)) or SIs-);
      				'
     			), LanguageCompiler.failure_reason
 	LanguageCompiler.generate_instance_dictionary English, dict0
 	a = English.parse "I ran with the dog"
-	a.disjunct_parse
+	assert_not_nil a.disjunct_parse
   end
 end

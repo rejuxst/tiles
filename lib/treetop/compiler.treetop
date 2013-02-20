@@ -24,18 +24,18 @@ grammar LanguageCompiler
 		}
 	end
 	rule dict_rule
-		[\s]* name:entry_class ' '* ':' ' '* equation:equation  [\s]* (';'+ ('%' .*)?)?  [\s]* <Entry>
+		[\s]* nm:entry_class nms:(' '+ nm:entry_class   )* ' '* ':' ' '* equation:equation  [\s]* (';'+ ('%' .*)?)?  [\s]* <Entry>
 	end
 	rule entry_class
 		class / instance / variable			
 	end
 	rule variable
-		type:'$' [A-Z]+				<EntryName>
+		type:'$' nm:[A-Z]+				<EntryName>
 	end
 	rule class
-		type:'@' [a-z]+ ('#' [a-z]+)*		<EntryName>
+		type:'@' nm:[a-z]+ sub_class:('#' [a-z]+)*	<EntryName>
 	end
 	rule instance
-		type:''	[a-zA-Z_]* ('.' [a-z]+)?	<EntryName>
+		type:''	nm:[a-zA-Z_]* cltype:('.' [a-z]+)?	<EntryName>
 	end
 end
