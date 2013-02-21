@@ -32,7 +32,7 @@ grammar LanguageCompiler
 		nm:variable ' '* ':' ' '* regex  [\s]* ';' 	 					<Entry>
 	end
 	rule entry_class
-		class / instance / variable
+		string / alias / class / variable / instance
 	end
 	rule variable
 		type:'$' nm:[A-Z_]+				<EntryName>
@@ -44,7 +44,14 @@ grammar LanguageCompiler
 		type:''	nm:[a-zA-Z_]* cltype:('.' [a-z]+)?	<EntryName>
 	end
 
+	rule string
+		'"' nm:( '\"' / (!'"' .) )* '"'			<EntryName>
+	end
+	rule alias
+		'<' (!('>' / '<') .)* '>'				<EntryName>
+	end
+
 	rule regex
-		'/' (!'/' .)* '/'		<Regex>
+		'/' ( '\/' / (!'/' .) )* '/'		<Regex>
 	end
 end

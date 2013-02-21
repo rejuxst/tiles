@@ -27,10 +27,10 @@ end
 ##### Linguistics Syntax Classes
 class Linguistics::WordClass < Treetop::Runtime::SyntaxNode
 ######## Accessors ###################
+	attr_accessor :grammar_dict
 	def connectors
 		list_connectors
 	end
-
 	def list_connectors
 		equation.list_connectors			
 	end	
@@ -255,6 +255,22 @@ end
 
 class Linguistics::CostNode < Linguistics::ParenNode 
 	def cost;  1; end
+end
+class Linguistics::AliasNode < Linguistics::ParenNode
+
+	def content
+		@content ||= Linguistics.parse (dict[text_value].is_a?(String)) ? dict[text_value] : dict[text_value].text_value
+	rescue Exception => e
+		raise "Unable to generate the subtree from the alias: #{text_value} 
+failure caused by #{e} => #{e.backtrace.join("\n")}" 
+	end
+
+	def dict
+		p = parent
+		p = p.parent until p.is_a? ::Linguistics::WordClass
+		p.grammar_dict 
+	end
+
 end
 ########################## END Treetop Parse Nodes #######################
 

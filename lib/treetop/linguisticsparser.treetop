@@ -3,24 +3,27 @@ grammar Linguistics
 		'' equation:or_rule <WordClass>
 	end
 	rule or_rule
-		start:and_rule other_terms:( ' '+ operator:'or'  ' '+ term:and_rule )* <DisjunctNode>
+		start:and_rule other_terms:( [\s]+ operator:'or'  [\s]+ term:and_rule )* <DisjunctNode>
 	end
 	rule and_rule
-		start:primary  other_terms:( ' '* operator:'&' ' '* term:primary    )* <OperandsNode> 
+		start:primary  other_terms:( [\s]* operator:'&' [\s]* term:primary    )* <OperandsNode> 
 	end
 	rule primary
-		optional / paren / connector / cost
+		optional / paren / cost / alias_node / connector
 	end
 	rule optional
-		' '* '{' ' '* or_rule ' '* '}'  <OptionalNode>
+		[\s]* '{' [\s]* or_rule [\s]* '}'  <OptionalNode>
 	end
 	rule paren
-		' '* '(' ' '* content:or_rule? ' '* ')'  <ParenNode>
+		[\s]* '(' [\s]* content:or_rule? [\s]* ')'  <ParenNode>
 	end
 	rule cost
-		' '* '[' ' '* content:or_rule? ' '* ']'  <CostNode>
+		[\s]* '[' [\s]* content:or_rule? [\s]* ']'  <CostNode>
+	end
+	rule alias_node
+		'<' nm:[A-Za-z_]+ '>'				<AliasNode>
 	end
 	rule connector
-		multiple:'@'? type:[A-Z]+ arb:'*'* misc:[a-z]* direction:[+-] <Connector>
+		multiple:'@'? type:[A-Z]+  arb:'*'* misc:([a-z] / '*')* direction:[+-] <Connector>
 	end
 end
