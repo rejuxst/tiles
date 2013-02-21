@@ -26,31 +26,49 @@ end
 ###########################
 ##### Linguistics Syntax Classes
 class Linguistics::WordClass < Treetop::Runtime::SyntaxNode
+######## Accessors ###################
 	def connectors
 		list_connectors
 	end
+
 	def list_connectors
 		equation.list_connectors			
-	end
-	def copy
-		Linguistics.parse(text_value)
-	end
+	end	
+	
 	def links
 		(list_connectors.collect { |con| con.links }).flatten
 	end
+
+	# Generate an independent copy of the wordclass
+	def copy
+		Linguistics.parse(text_value) 	#TODO: We don't actually care about the equation we can just
+						# 	 directly copy the disjunct sets and generate copies of the connectors
+	end
+	
+	# Generates a set of disjuncts for the wordclass
+	def disjuncts
+		@disjuncts ||= equation.disjuncts.sort do |d1,d2| 
+			d1.inject(0) { |r,e| r + e.cost } <=>  d2.inject(0) { |r,e| r + e.cost }
+		end
+	end
+###########################
+
 	def delete_pairing!
 		list_connectors.each {|con| con.delete_pairing! }
 	end
+
+##########################
+# These check validity of connector states DEPRECIATED should still work?
 	def sat?
 		equation.sat?
 	end
 	def valid?
 		equation.valid?
 	end
-	def disjuncts
-		@disjuncts ||= equation.disjuncts.sort do |d1,d2| 
-			d1.inject(0) { |r,e| r + e.cost } <=>  d2.inject(0) { |r,e| r + e.cost }
-		end
+##############
+
+	def inspect
+		"#<#{self.class} : \"#{text_value}\" >"
 	end
 end
 
@@ -64,12 +82,14 @@ class Linguistics::Connector < Treetop::Runtime::SyntaxNode
 	end
 ################################
 # Post generation support functions
+
 	def add_link(link)
 		(@links ||= []).push(link)
 	end
 	def links
 		@links ||= []
 	end
+
 #################################
 # Support functions for Linkage generation
 	def cost
@@ -87,35 +107,55 @@ class Linguistics::Connector < Treetop::Runtime::SyntaxNode
 		@wordclass = @wordclass.parent until @wordclass.is_a? Linguistics::WordClass
 		@wordclass
 	end
+
 	def delete_pairing!
 		@pairings = nil
 	end
 
-	def pair(other,in_direction = :forward)
-		in_direction = {:forward => "+", "+" => "+", :backward => '-', '-' => '-'}[in_direction]
-		self.add_partner(other,in_direction)
-		other.add_partner(self,(in_direction == '+') ? :backward : :forward)
+	# Pair this connector to another 
+	def pair(other)
+		raise "Cannot pair #{other} is not a valid partner" if !(other === self) or other.wordclass == self.wordclass
+		self.add_partner(other)
+		other.add_partner(self)
 	end
 
-	def add_partner(other,in_direction = :forward)
-		in_direction = {:forward => "+", "+" => "+", :backward => '-', '-' => '-'}[in_direction]
-		(@pairings ||= {}).merge!( { other => in_direction } )
+	# Add to the set of pairs
+	def add_partner(other)
+		(@pairings ||= []).push other  
 	end
+
+	# Checks if this connector could match the other connector (ignores word validity)
 	def ===(other)
-		matchs?(other,:forward) or matchs?(other,:backward)
+		 (direction_match?(other,'+') ||  direction_match?(other,'-')) &&
+		upper_match?(other) && lower_match?(other)  
+		#matchs?(other,:forward) or matchs?(other,:backward) 
+	rescue 
+		raise "Failure comparing #{other} may not be a valid #{self.class}"
 	end
-	def matchs?(other,in_direction = :forward)
+	
+	# Checks if the connector can form a valid link with the other connector
+	# in_direction defined the direction the other connector is 
+	# ( in the context of the sentence not its actual dictection.text_value )
+	def matchs?(other,in_direction = nil)
+		in_direction = self.direction.text_value if in_direction.nil?
 		in_direction = {:forward => "+", "+" => "+", :backward => '-', '-' => '-'}[in_direction]
-		direction_match?(other,in_direction)  && upper_match?(other) && lower_match?(other)
+		direction_match?(other,in_direction)  && upper_match?(other) && 
+		lower_match?(other) && (other.wordclass != self.wordclass) # Can't match to the same word
 	end
+
+	# Check that the signs of the respective connectors matches their relative word position
 	def direction_match? other ,in_direction
 		self.direction.text_value == in_direction	&& 
 		!other.direction.nil?				&& 
 		other.direction.text_value != in_direction  	
 	end 
+	
+	# Are the Connectors of the same generic type?
 	def upper_match? other
 		other.type.text_value == self.type.text_value
 	end
+	
+	# Do the subclasses of the connectors match? 
 	def lower_match? other
 		mine = (arb.text_value + misc.text_value).each_char.collect { |c| c }
 		theirs = (other.arb.text_value + other.misc.text_value).each_char.collect { |c| c }
@@ -124,30 +164,39 @@ class Linguistics::Connector < Treetop::Runtime::SyntaxNode
 		end
 	end
 
+	# Set of all connectors paired to this connector
 	def pairings
-		@pairings
+		@pairings ||= []
 	end
 
+	# Is this connector satisfied (i.e meets linkage requirements Y
 	def sat?
-		!@pairings.nil? && (@pairings.length == 1 || !multiple.nil?) && 
-		@pairings.all? { |k,v| self.matchs?(k,v) }
+		!pairings.empty? && (pairings.length == 1 || !multiple.nil?) && 
+		pairings.all? { |k| self.matchs?(k) }
 	end
-
-	def valid?
-		
-		@pairings.nil? || (@pairings.length == 1 || !multiple.nil?) && 
-		@pairings.all? { |k,v| self.matchs?(k,v) && self.wordclass != k.wordclass}
+	
+	# If this connector isn't satisfied are any of the pairings an invalid match for this connector
+	# usually translates to (sat? || pairings.empty?)
+	def valid?	
+		pairings.empty? || (pairings.length == 1 || !multiple.nil?) && 
+		pairings.all? { |v| self.matchs?(v) && self.wordclass != v.wordclass}
 	end
 
 	def has_pairings?
-		!@pairings.nil?	
+		!pairings.empty?	
 	end
+
+	# The Set of all disjuncts of a single connector is itself
 	def disjuncts
-		[[self]]
+		[[self]] # Double nested because a Set of disjunsts is a set of sets of connectors
 	end
 ###############################
 end
 ###################### Treetop Parse Nodes ##############################
+# Refer to Linguistics treetop file for how these nodes are instanciated
+# These nodes are subnodes of a linguisitics equation used primarily for
+# initial disjunct set creation
+
 class Linguistics::DisjunctNode < Treetop::Runtime::SyntaxNode
 
 	def list_connectors
@@ -194,6 +243,7 @@ class Linguistics::OptionalNode < Treetop::Runtime::SyntaxNode
 		or_rule.disjuncts + [[]]
 	end
 end
+
 class Linguistics::ParenNode < Treetop::Runtime::SyntaxNode
 	def list_connectors
 		content.nil? ? [] : content.list_connectors
@@ -202,15 +252,22 @@ class Linguistics::ParenNode < Treetop::Runtime::SyntaxNode
 		(content.empty?) ?  [[]] : content.disjuncts
 	end
 end
-class Linguistics::CostNode < Linguistics::ParenNode
+
+class Linguistics::CostNode < Linguistics::ParenNode 
 	def cost;  1; end
 end
+########################## END Treetop Parse Nodes #######################
+
 class Linguistics::Sentence < Treetop::Runtime::SyntaxNode
+# Linguistics::Sentence is a generic word relational system meant to be 
+# inherited on a language by language basis. Provided functionality
+# to generate Link Parser grammatical links as defined by the 
+# Grammar selected by the individual words.
 ######################################
 	public 
 	##############################
 	def words
-		raise "Reached Linkage version must be overidden by including object"
+		raise "Reached Linguistics version. must be overidden by including object"
 	end
 	def links
 		@links
@@ -218,10 +275,13 @@ class Linguistics::Sentence < Treetop::Runtime::SyntaxNode
 	def link(index)
 		@links[index]
 	end	
+	def resolve
+		@resolve_status ||= disjunct_linkage_generate
+	end
 
-
+	#TODO: Remove this function as this isn't a parsing call so much as it is a compile
 	def parse
-		@link_list ||= disjunct_linkage_generate
+		@parse_status ||= disjunct_linkage_generate
 	end
 ####################################
 	private
@@ -230,14 +290,14 @@ class Linguistics::Sentence < Treetop::Runtime::SyntaxNode
 
 	# This function is called on a successful generation of linkages and sets up the sentence 
 	def set_linkages(possible_link_array)
-		words.length.times{ |i| words[i].wordclass = wordclasses[i] }
-		@links = possible_link_array.collect do |lk| 
-			link = Linguistics::Link.new(lk[:forward],lk[:backward], lk[:b_index] - lk[:f_index],lk[:f_index]) 
-			lk[:backward].add_link(link) 
-			lk[:forward].add_link(link) 
-			link
+		return :failed if possible_link_array.nil?
+		whsh = {}
+		words.length.times{ |i| words[i].wordclass = wordclasses[i]; whsh[wordclasses[i]] = i }
+		@links = possible_link_array.collect do |con| 
+			if con.direction.text_value == '+'
+				con.pairings.collect { |p| Linguistics::Link.new(con,p, whsh[p.wordclass] - whsh[con.wordclass],whsh[con.wordclass])  }
+			end
 		end
-		true
 	end
 	def wordclasses
 		@wordclasses ||= words.collect do |ele| 
@@ -245,17 +305,20 @@ class Linguistics::Sentence < Treetop::Runtime::SyntaxNode
 		end
 	end
 
-
+	# Internal function that generates the link_set if possible and sets @links
+	# This function should be called directly by subclasses of Linguistic::Sentence in the resolve function
 	def disjunct_linkage_generate
 		dis_arr = 	wordclasses.collect { |wc| wc.disjuncts } # collection of disjunct arrays
 		dis_arr = 	prune_disjuncts(dis_arr)		  # Prune disjuncts that can't exist
 		# Use product to generate a list of all combinations of disjuncts that could work
 		link_pool = 	dis_arr.inject([[]]) {|r,e| r.product(e).collect { |q| q.flatten } }
 		link_list = 	select_from_link_pool(link_pool)
+		set_linkages(link_list) # set the @links if links can be created
 	end
 
 
-
+	# Find a valid set of connectors from a pool of disjunct combinations. Link_pool should be the
+	# set of all possible combinations of disjuncts (1 per word).
 	def select_from_link_pool pool
 		pool.each do |ll|
 			wordclasses.each { |wc| wc.delete_pairing! } # Clean last connector list
@@ -268,35 +331,38 @@ class Linguistics::Sentence < Treetop::Runtime::SyntaxNode
 						v.last.direction.text_value == '+'}
 			hsh.each { |k,v| _pair_sub_array(v) ; _pair_sub_array(v.reverse) }
 			next if ll.any? { |con| !con.sat? || !con.valid? } || 
-				!_valid_lengths?(ll)
+				!_valid_lengths?( ll.inject({}) do |h,c| # Generate index connector hash 
+							h.merge!( { c => wordclasses.index(c.wordclass) } )  
+							(h[h[c]] ||= []).push c
+							h
+						end
+						)
 			return ll
 		end
 		return nil
 	end
-	
-	def _valid_lengths?(ll,bl = nil, fl = nil)
+
+	# Checks if a link set meets the length requirements (No crossing). list (lhsh) is passed as a index hash
+	# so the connector's word can easily be identified. This function is recursive
+	def _valid_lengths?(lhsh,bl = nil, fl = nil,chsh = nil)
 		# if no bounds given generate default bounds
 		bl = 0 if bl.nil?
 		fl = wordclasses.length if fl.nil?  
 		return true if ((bl+1)...fl).to_a.length < 2  
 		# ^Recursive end case when the range of words being checking is empty 
 
-		# Generate hash to allow determining the index of a connector's wordclass
-		chsh = {}; lhsh = {}; wordclasses.length.times { |i| lhsh[wordclasses[i]] = i;chsh[i] = [] }	
-		# Generate hash to allow determining the list of connectors in a wordclass (cant use list_connectors
-		#	because some of those are invalid because they arent in the disjunct pool
-		ll.each { |c| (chsh[lhsh[c.wordclass]] ||= []).push c }
 		# If any of the words have connectors that point out of the valid range the result if invalid
-		return false if ((bl+1)...fl).to_a.any? { |i| chsh[i].any? { |con| 
-					con.pairings.any? { |k,v| (v.to_s == '+') ? lhsh[k.wordclass] > fl : lhsh[k.wordclass] < bl } } }
+		return false if ((bl+1)...fl).to_a.any? { |i| lhsh[i].any? { |con| 
+					con.pairings.any? { |v| (v.direction.text_value == '+') ? lhsh[v] > fl : lhsh[v] < bl } } }
+
 		# Create a dividing point to seperate the words into those inside the longest link and outside the
 		# longest link
-		new_fl = chsh[bl].collect { |con| lhsh[con.pairings.keys.max { |p| lhsh[p.wordclass] }.wordclass] }.max 
-		return	_valid_lengths?( ll , bl, new_fl ) && _valid_lengths?(ll,new_fl,fl) # test both subsets	
+		new_fl = (lhsh[bl] ||= []).collect { |con| lhsh[con.pairings.max { |p| lhsh[p] }] }.max 
+		return	_valid_lengths?( lhsh , bl, new_fl ) && _valid_lengths?(lhsh,new_fl,fl) # test both subsets	
 	end
 
 	# Support pairing function for a link_pool v is the list of connectors (assumed of the same type
-	def _pair_sub_array(v,id = '+')
+	def _pair_sub_array v, id = '+'
 		v.length.times do |i| 
 			next if v[i].direction.text_value != id || (v[i].sat? && v[i].valid? && v[i].multiple.nil?)
 			sd = 0; # Same Direction counter
@@ -305,7 +371,7 @@ class Linguistics::Sentence < Treetop::Runtime::SyntaxNode
 					when v[ip].direction.text_value == id then sd = sd + 1
 					when sd > 0 then sd = sd - 1
 					when sd == 0 
-						v[i].pair(v[ip], id) if v[i].matchs?(v[ip],id) && 
+						v[i].pair(v[ip]) if v[i].matchs?(v[ip],id) && 
 									(!v[ip].sat? || v[ip].multiple.nil?) 
 						break if v[i].multiple.nil?
 				end
@@ -314,7 +380,7 @@ class Linguistics::Sentence < Treetop::Runtime::SyntaxNode
 	end
 
 
-
+	# Prunes disjuncts that are unlikely to generate valid results (i.e the disjunct has no possible match)
 	def prune_disjuncts dis_arr
 		did_prune = true
 		while did_prune do
@@ -336,5 +402,5 @@ class Linguistics::Sentence < Treetop::Runtime::SyntaxNode
 		end
 		dis_arr
 	end
+
 end
-##################### END Treetop Parse Nodes ########################
