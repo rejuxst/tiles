@@ -58,6 +58,7 @@ begin
 	  opts.on("-o","--look-test","Open the test file using default editor") do
 		ARGV.each do |b| 
 			if File.exists? File.join(blkt,b.downcase + "_test.rb")
+				system("echo /usr/bin/env $EDITOR #{File.join(blkt,b.downcase + "_test.rb")}") 
 				system("/usr/bin/env $EDITOR #{File.join(blkt,b.downcase + "_test.rb")}") 
 			else
 				puts "File doesn't exist => #{File.join(blkt,b.downcase + "_test.rb")}"

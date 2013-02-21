@@ -1,19 +1,21 @@
 require 'treetop/linguisticsparser.treetop'
 require 'lang/english'
 require 'lang/englishparser'
-require 'treetop/compiler.treetop' #NOTE: must include .treetop as treetop/compiler is a folder in the treetop gem
+require 'treetop/compiler.treetop' #NOTE: must include with .treetop ext as treetop/compiler is a folder in the treetop gem
 
 class Test_LanguageCompiler < Test::Unit::TestCase
 	Tiles::Application::Configuration.use_default_configuration rescue nil
 	::Linguistics.parser= ::LinguisticsParser.new 
 	#Treetop.load File.join(File.dirname(__FILE__),"..","..","lib","treetop")
   def test_interactive
+	assert_not_nil a = LanguageCompiler.parse( ' $TERMINAL_CHARACTERS : /lmn/ ; ' )
 	assert_not_nil c = LanguageCompiler.parse(
-				'@var : A+
+				'@var : A+;
 				% Comment
-				@bar : B+'
+				@bar : B+;
+				$TERMINAL_CHARACTERS : /[\s_";()]/ ;
+				'
 			), LanguageCompiler.failure_reason
-
 	assert_not_nil dict0 = LanguageCompiler.parse(
      				'
     				 I    : J- or O- or (Sp+ & (({@CO-} & {C-}) or R-)) or SIp-;
