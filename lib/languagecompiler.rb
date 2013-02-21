@@ -35,4 +35,9 @@ module LanguageCompiler
 			nm.text_value
 		end
 	end
+	class Regex < Treetop::Runtime::SyntaxNode
+		def regex
+			::Regex.new text_value
+		end
+	end
 end

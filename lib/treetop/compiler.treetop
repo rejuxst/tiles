@@ -1,15 +1,15 @@
 grammar LanguageCompiler
 	include Linguistics
 	rule dict
-		dict_line* {
+		([\s]* dl:dict_line [\s]*)* {
 			def entries
-				elements.collect { |e| e unless e.empty? or e.is_comment? }.delete_if { |e| e == nil }
+				elements.collect { |e| e.dl unless e.empty? or e.dl.is_comment? }.delete_if { |e| e == nil }
 			end
 		}
 	end
 
 	rule dict_line
-		dict_rule / comment {
+		dict_rule / global_rule / comment {
 			def is_comment?
 				true
 			end
@@ -17,25 +17,34 @@ grammar LanguageCompiler
 	end
 
 	rule comment
-		' '* comment:'%' .* !(!"\n"  . )  {
+		[\s]* comment:'%'  (!"\n"  . )*  {
 			def is_comment?
 				true
 			end
 		}
 	end
+
 	rule dict_rule
-		[\s]* nm:entry_class nms:(' '+ nm:entry_class   )* ' '* ':' ' '* equation:equation  [\s]* (';'+ ('%' .*)?)?  [\s]* <Entry>
+		nm:entry_class nms:(' '+ nm:entry_class   )* ' '* ':' ' '* equation:equation  [\s]* ';'+ 	<Entry>
+	end
+
+	rule global_rule
+		nm:variable ' '* ':' ' '* regex  [\s]* ';' 	 					<Entry>
 	end
 	rule entry_class
-		class / instance / variable			
+		class / instance / variable
 	end
 	rule variable
-		type:'$' nm:[A-Z]+				<EntryName>
+		type:'$' nm:[A-Z_]+				<EntryName>
 	end
 	rule class
 		type:'@' nm:[a-z]+ sub_class:('#' [a-z]+)*	<EntryName>
 	end
 	rule instance
 		type:''	nm:[a-zA-Z_]* cltype:('.' [a-z]+)?	<EntryName>
+	end
+
+	rule regex
+		'/' (!'/' .)* '/'		<Regex>
 	end
 end
