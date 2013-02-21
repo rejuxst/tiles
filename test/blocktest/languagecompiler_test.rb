@@ -25,6 +25,6 @@ class Test_LanguageCompiler < Test::Unit::TestCase
     			), LanguageCompiler.failure_reason
 	LanguageCompiler.generate_instance_dictionary English, dict0
 	a = English.parse "I ran with the dog"
-	assert_not_nil a.disjunct_parse
+	assert_not_nil a.parse
   end
 end
