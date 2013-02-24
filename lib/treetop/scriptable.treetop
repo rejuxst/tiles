@@ -1,25 +1,28 @@
 grammar Scriptable
 	rule script
-		 ( [\s]* (script_block / script_element) [\s]* )* [\s]*
+		 entries:( [\s]* ent:(script_block / script_element) [\s]* )* [\s]* <Scriptable::InternalScript>
 	end
 	rule script_block
 		 begin_element ( script_block / (!end_element  .))* end_element
+			&{ |en| Scriptable::Preprocessor; true } <Scriptable::Block>
 	end
 ######## Script Element ###########
 	rule begin_element
-		'\\' 'begin' / valid_block_name  element_parameters?   element_inputs?
+		'\\' name:('begin' / valid_block_name)  element_parameters?   element_inputs?
 	end
 	rule end_element
 		'\\' 'end'	element_parameters?
 	end
 	rule script_element
-		'\\'  element_name element_parameters? element_inputs?
+		'\\'  name:element_name element_parameters? element_inputs? 
+			&{ |en| Scriptable::Preprocessor.execute_element(*en[1..3]); true} 
+				<Scriptable::Element> 
 	end
 	rule valid_block_name
-		[\w]+ &{ |en| Scriptable.block_names[en[1].text_value].nil? rescue nil ; false } 
+		[\w]+ &{ |en| Scriptable::Preprocessor.is_blockname_valid?(en[0].text_value)} 
 	end
 	rule element_name
-		[\w]+ &{ |en| Scriptable.preload(en[0].text_value).nil? == false rescue true; true } 
+		[\w]+ 
 	end
 	rule element_parameters
 		'{' [\w\s]* '}'
