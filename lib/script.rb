@@ -1,5 +1,5 @@
 module Scriptable
-# The scripbtable module provides core scripting functionality to parse interprete and preform
+# The scriptable module provides core scripting functionality to parse interprete and preform
 # tiles scripts. Tiles scripts are designed to use a limited vocabuary that will allow developers
 # to write software in a language that physically resembles english and operates in a similar manner.
 # To this end the idiom of the Tiles engine should and will encourage developement through a
@@ -27,6 +27,32 @@ module Scriptable
 # Script Context -
 # Word Context-
 # Owner Context - this is recursive up the ownership stack
+	class Preprocessor
+		def self.is_blockname_valid?(name)
+			name.to_s == 'begin'
+		end
+		def self.execute_element(name,params = nil,inputs = nil)
+			binding.pry
+		end
+		def self.add_blockname(name)
+		end
+	end
+	
+	class InternalScript < Treetop::Runtime::SyntaxNode
+		def list
+			entries.elements.collect {|e| e.ent }
+		end
+	end
+
+	class Element < Treetop::Runtime::SyntaxNode
+	end
+
+	class Block < Treetop::Runtime::SyntaxNode
+		def name
+			begin_element.name
+		end
+	end
+
 	def self.block_names(name = nil)
 		return @block_names if name.nil?
 		@block_names ||= {}
@@ -36,7 +62,11 @@ module Scriptable
 		@block_name ||= {}
 		@block_name[name] = true
 	end
-	def self.preload(name)
+	def self.on_load_callback(name)
+	end
+	def import(package)
+	end
+	def self.finished_resolving_element(name)
 	end
 
 end
