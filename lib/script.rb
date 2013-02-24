@@ -27,97 +27,17 @@ module Scriptable
 # Script Context -
 # Word Context-
 # Owner Context - this is recursive up the ownership stack
-attr_reader :script_sentence
-attr_reader :script_db
-	def interpret_script(string)
-		if string.class != String
-			begin
-			string = string.to_s 
-			rescue 
-			raise "Passed a Non-String to a #{self.class.to_s}" unless(string.class <= String)
-			end
-		end
-		@script_sentence = Scriptable::Sentence.new(self)
-		string.for_each do |c| 
-			if (@script_sentence.send_char(c)) == :complete
-				@script_sentence.next= Scriptable::Sentence.new(self,@script_sentence)
-				@script_sentence = @script_sentence.next
-			end
-		end
-
+	def self.block_names(name = nil)
+		return @block_names if name.nil?
+		@block_names ||= {}
+		@block_names[name]
 	end
-
-class Sentence
-	attr_reader :state		# Sentence State
-	attr_reader :next, :previous 	# Before/After Sentences
-	attr_reader :children, :parent  # Up and Down motion
-	attr_reader :context  		# Context is the parent
-	attr_reader :delimiter		# The Delimiter that ended the context
-	def initialize(context,previous = nil,parent = nil)
-		#raise "Context is not Scriptable #{context}"unless context.include? Scriptable
-		@context  = context
-		@previous = previous
-		@parent   = parent
-		@children = []
-		@children << Word.new(@context,@previous,self)
-		@state    = :new
+	def self.add_block_name(name)
+		@block_name ||= {}
+		@block_name[name] = true
 	end
-	def send_char(char)
-		return :leading_whitespace if @state == :new && /\ \n/.match(char).nil?
-		@state = :in_progress 
-		if  @children.last.send_char(char) == :complete
-			@children << Word.new(@context,@current,self)
-		end
-		if /[\.;\!\:]/.match(char) # A sentence can be ended by a semi-colon,colon,period
-			@state = :complete 
-			@delimiter = char	
-		end
-		return @state
-	rescue
-		raise	
+	def self.preload(name)
 	end
-	def print
-	end
-	def resolve
-	end
-end
-class Word
-	attr_accessor 	:next   	# Previous Word
-	attr_reader	:word		# Current Word String
-	attr_reader 	:previous	# After Word
-	attr_reader	:parent		# Parent Context
-	attr_reader 	:context  	# Context is the parent
-	attr_reader	:delimiter	# Completion Delimiter
-	def initialize(context,previous = nil,parent = nil)
-		@context  = context
-		@previous = previous
-		@parent   = parent
-		@state    = :new
-		@string   = ''
-	end
-        def send_char(char)
-                return :leading_whitespace if @state == :new && /\ \n/.match(char).nil?
-                @state = :in_progress 
-                if /[\!,;:\.\ ]/.match(char)
-		# A Word can be completed by a:
-		# :punctuation: or :whitespace:
-                        @state = :complete 
-                        @delimiter = char
-			resolve
-			return @state
-                end
-		@string << char
-                return @state
-        end
-
-	def print
-		return @string
-	end
-	def resolve
-		interpretation = @context.dictionary_lookup(@string)
-		# Resolve interpretation into context
-	end
-end
 
 end
 class Script
