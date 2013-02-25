@@ -36,7 +36,6 @@ module Scriptable
 			name.to_s == 'begin'
 		end
 		def execute_element(name,params = nil,inputs = nil)
-			binding.pry
 		end
 		def add_blockname(name)
 		end

@@ -145,11 +145,16 @@ def add_reference_set(key,target,opts = {})
 	target.each { |t| add_to_db t }  if opts[:add_then_reference]
 	add_to_db Reference::Set.new(self,target) , key
 end
-def add_variable(key,target)
-	unless key.class <= String && key.to_i.to_s != key
+def add_variable(key,target,opts = {})
+	unless (key.class <= String && key.to_i.to_s != key) || key.nil?
 		raise "Invalid key type. Key for Reference should be of type String, key is a #{key.class}" 
 	end
-	add_to_db Reference::Variable.new(self,target) , key
+	r = add_to_db Reference::Variable.new(self,target) , key 
+	case opts[:return]
+		when :variable,"variable" then self[key]
+		when :key,"key"		  then key
+		else			  r
+	end
 	
 end
 #
@@ -208,6 +213,8 @@ end
   end
   def db_get(ky)
 	return instance_exec ky, &Database[ky.class]
+  rescue
+	binding.pry
   end
   def [](*ky)
 	ky.inject(self){ |d,k| d.db_get(k) } rescue nil

@@ -46,9 +46,10 @@ class << self
 		end
 	end
 	def setup		
-		load_application_from @opts[:app_dir]
 		@configuration= Tiles::Application::Configuration.last_config || 
 				Tiles::Application::Configuration.use_default_configuration 
+		@hello = 'hello'
+		load_application_from @opts[:app_dir]
 		@input_blk = Proc.new {} if @input_blk.nil?
 		game = eval(@game_string.to_s.capitalize) #TODO:This is a HUGE security flaw fix it
 		raise "#{game} is not a Tiles::Game" unless game <= Game
@@ -77,10 +78,11 @@ class << self
 
 	def load_application_from dir
 		dir = File.absolute_path (dir || Dir.pwd) 
-		app = File.join dir, 'app'
-		Dir.foreach(app) do |ent|
+		appt = File.join dir, 'app'
+		df = Dir.foreach(appt)
+		df.each do |ent|
 			next if [/^\./].any? {|m| !ent.match(m).nil? }
-			f_path = File.expand_path File.join(app, ent)
+			f_path = File.expand_path File.join(appt, ent)
 			Dir.foreach(f_path) do |file|
 				next if [/^\./].any? {|m| !file.match(m).nil? }
 				gem_original_require File.expand_path File.join(f_path,file) 
