@@ -53,20 +53,8 @@ class Database::Reference
 		end
 	end
 	class Collection < ::Database::Reference
-
-		def initialize(source,target,opts = {}, &blk)
-			raise "Source location is not a Database Reference cannot be generated" if !Database.is_database?(source)
-			raise "Input is not a set of values collection should be an Array is a #{collection.class}" if !collection.is_a? Array	
-			@source = source
-			@collection = collection
-		end
-		def resolve #TODO: How to add and remove from a collection 
-			#Set.new self , 
-			@collection.collect {|item| item.is_a? Reference ? item.resolve : item }.delete_if {|i| i.nil?}
-		end
-
 	end
-	class Set < ::Database::Reference
+	class ::Database::Reference::Set < ::Database::Reference
 		include Enumerable
 		def initialize(source, data, opts = {})
 			@source = source
@@ -91,6 +79,9 @@ class Database::Reference
 		end
 		def <<(item)
 			add(item)
+		end
+		def db_get(*ind)
+			index(*ind)
 		end
 		def [](*ind)
 			index(*ind)

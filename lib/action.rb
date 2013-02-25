@@ -68,7 +68,7 @@ class Action
 		when :cancel	then raise ActionCancel, "One of the components of the Action canceled it"
 		when :retry
 		when nil 	then	return nil
-		else
+		else		
 		end
 	end
 	class ActionCancel < StandardError
