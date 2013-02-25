@@ -1,3 +1,7 @@
+require 'pry'
+require 'polyglot'
+require 'treetop'
+
 module Scriptable
 # The scriptable module provides core scripting functionality to parse interprete and preform
 # tiles scripts. Tiles scripts are designed to use a limited vocabuary that will allow developers
@@ -27,16 +31,15 @@ module Scriptable
 # Script Context -
 # Word Context-
 # Owner Context - this is recursive up the ownership stack
-	class Preprocessor
-		def self.is_blockname_valid?(name)
+
+		def is_blockname_valid?(name)
 			name.to_s == 'begin'
 		end
-		def self.execute_element(name,params = nil,inputs = nil)
+		def execute_element(name,params = nil,inputs = nil)
 			binding.pry
 		end
-		def self.add_blockname(name)
+		def add_blockname(name)
 		end
-	end
 	
 	class InternalScript < Treetop::Runtime::SyntaxNode
 		def list
@@ -70,6 +73,11 @@ module Scriptable
 	end
 
 end
-class Script
-	include Scriptable
+
+require 'treetop/scriptable'
+class Script < ScriptableParser
+	def initialize(string)
+		super()
+		@script = parse string
+	end
 end

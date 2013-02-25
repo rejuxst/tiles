@@ -4,7 +4,7 @@ grammar Scriptable
 	end
 	rule script_block
 		 begin_element ( script_block / (!end_element  .))* end_element
-			&{ |en| Scriptable::Preprocessor; true } <Scriptable::Block>
+			&{ |en| true } <Scriptable::Block>
 	end
 ######## Script Element ###########
 	rule begin_element
@@ -15,11 +15,11 @@ grammar Scriptable
 	end
 	rule script_element
 		'\\'  name:element_name element_parameters? element_inputs? 
-			&{ |en| Scriptable::Preprocessor.execute_element(*en[1..3]); true} 
+			&{ |en| execute_element(*en[1..3]); true} 
 				<Scriptable::Element> 
 	end
 	rule valid_block_name
-		[\w]+ &{ |en| Scriptable::Preprocessor.is_blockname_valid?(en[0].text_value)} 
+		[\w]+ &{ |en| is_blockname_valid?(en[0].text_value)} 
 	end
 	rule element_name
 		[\w]+ 
