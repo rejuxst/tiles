@@ -6,10 +6,20 @@ module Generic
 	include Database
 		#note that 
 		module Extentions
+			include Database
 			def add_properties(*args)
 				@default_properties ||= (super.default_properties rescue @default_properties = [])
 				args.each {  |p| @default_properties.push p }
 				nil
+			end
+			def add_class_property(prop,value_hash = {})
+				prop = eval("#{prop.to_s.capitalize}") unless prop.is_a? Class 
+					#TODO: Switch to Dictionary lookup of property 
+				instance = prop.new(value_hash)
+				add_to_db(instance,prop.to_s.downcase)
+				prop.required_references.each_pair do |name,params| 
+					add_reference name,instance,&params		
+				end
 			end
 			def default_properties
 				@default_properties || []

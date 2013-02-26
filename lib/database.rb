@@ -213,8 +213,6 @@ end
   end
   def db_get(ky)
 	return instance_exec ky, &Database[ky.class]
-  rescue
-	binding.pry
   end
   def [](*ky)
 	ky.inject(self){ |d,k| d.db_get(k) } rescue nil
@@ -271,7 +269,7 @@ end
   end
 ############## Misc Functions ##################################
   def inspect
-"#<#{self.class}:0x#{object_id.to_s(16)} | db: size(#{@db.length}) => References: #{@db.count{|ky,val| val.class <= Reference}}>"
+"#<#{self.class}:0x#{object_id.to_s(16)} | db: size(#{db.length}) => References: #{db.count{|ky,val| val.class <= Reference}}>"
   end
 
 end
