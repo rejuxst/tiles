@@ -79,8 +79,7 @@ class << self
 	def load_application_from dir
 		dir = File.absolute_path (dir || Dir.pwd) 
 		appt = File.join dir, 'app'
-		df = Dir.foreach(appt)
-		df.each do |ent|
+		Dir.foreach(appt).each do |ent|
 			next if [/^\./].any? {|m| !ent.match(m).nil? }
 			f_path = File.expand_path File.join(appt, ent)
 			Dir.foreach(f_path) do |file|
