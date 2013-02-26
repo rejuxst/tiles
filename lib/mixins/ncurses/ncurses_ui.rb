@@ -5,7 +5,6 @@ end
 if(/linux/.match(RUBY_PLATFORM).nil? && /darwin/.match(RUBY_PLATFORM).nil?)
 #require 'ffi-ncurses' # Use ncurses for Windows and non-curses systems
 end
-require 'UI'
 # export RUBY_FFI_NCURSES_LIB=/lib/libncursesw.so.5.9
 # ^ Run the above line if the FFI::Ncurses library isn't linking
 module Ncurses

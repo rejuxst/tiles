@@ -73,7 +73,7 @@ module Scriptable
 
 end
 
-require 'treetop/scriptable'
+require 'grammars/scriptable'
 class Script < ScriptableParser
 	def initialize(string)
 		super()

@@ -1,4 +1,4 @@
-require 'database'
+
 #TODO: Deal with issues regarding class inheritance 
 module Generic
 	module Base

@@ -1,5 +1,3 @@
-require 'generic'
-require 'responsive'
 require 'pry'
 module Active
 	def take_turn

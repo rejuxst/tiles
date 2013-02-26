@@ -1,7 +1,8 @@
-require 'treetop/linguisticsparser.treetop'
-require 'lang/english'
-require 'lang/englishparser'
-require 'treetop/compiler.treetop' #NOTE: must include with .treetop ext as treetop/compiler is a folder in the treetop gem
+require 'grammars/linguisticsparser.treetop'
+require 'lang/language'
+require 'lang/en/english'
+require 'lang/en/englishparser'
+require 'grammars/compiler.treetop' #NOTE: must include with .treetop ext as treetop/compiler is a folder in the treetop gem
 
 class Test_LanguageCompiler < Test::Unit::TestCase
 	Tiles::Application::Configuration.use_default_configuration rescue nil

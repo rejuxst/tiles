@@ -1,9 +1,10 @@
 require 'pry'
 require 'polyglot'
 require 'treetop'
-require 'treetop/linguisticsparser.treetop'
-require 'lang/english'
-require 'lang/englishparser'
+require 'lang/language.rb'
+require 'grammars/linguisticsparser.treetop'
+require 'lang/en/english'
+require 'lang/en/englishparser'
 class Test_Linguistics < Test::Unit::TestCase
 	Tiles::Application::Configuration.use_default_configuration rescue nil
 	::Linguistics.parser= ::LinguisticsParser.new 

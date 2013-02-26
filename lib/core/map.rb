@@ -1,5 +1,3 @@
-require "generic"
-require "active"
 class Map
 	include Generic::Base
 	include Generic::Responsive

@@ -1,9 +1,3 @@
-if !defined? Tiles
-	module Tiles ; end
-end
-if !defined? Tiles::Application
-	class Tiles::Application; end
-end
 class Tiles::Application::Configuration
 	private_class_method :new
 	def self.new_configuration(opts = {},&blk)

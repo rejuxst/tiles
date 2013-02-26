@@ -1,4 +1,3 @@
-module Tiles; end
 class Tiles::Application
 	private :method
 	private :send 

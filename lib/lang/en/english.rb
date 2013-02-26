@@ -1,7 +1,6 @@
 require 'pry'
 require 'polyglot'
 require 'treetop'
-require 'linguistics'
 class English < Language
 	class Grammar < Language::Grammar
 	end

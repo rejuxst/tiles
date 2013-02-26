@@ -1,9 +1,8 @@
-require 'database'
 require 'pry'
-require 'linguistics'
+require 'lang/linguistics'
 class Language
 	def self.load_parser
-		Treetop.load File.join(File.dirname(__FILE__),"lang/#{self.name.downcase}parser")
+		Treetop.load File.join(File.dirname(__FILE__),"en/#{self.name.downcase}parser")
 		@parser = eval("#{self.name}LanguageParser.new")
 	end
 	def self.parse(string)
@@ -49,3 +48,4 @@ class Language::Word < Treetop::Runtime::SyntaxNode
 		text_value.strip
 	end
 end
+require 'lang/dictionary'

@@ -1,6 +1,6 @@
 ### MAIN LOOP ###
 $LOAD_PATH << File.absolute_path(File.join(File.dirname(__FILE__),'/../../lib/'))
-require 'launcher'
+require 'tiles'
 Tiles::Launcher.launch( "Crawl", 
 		:debug => true, 
 		:load_source => :source, :source_dir => File.join(Dir.pwd,'lib') , 

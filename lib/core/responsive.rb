@@ -1,6 +1,3 @@
-require 'generic'
-require 'database'
-require 'reference'
 module Generic::Responsive
 	module Extensions
 	end

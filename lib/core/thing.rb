@@ -1,7 +1,4 @@
 require 'pry'
-require "action"
-require "generic"
-require "database"
 class Thing
 	include Generic::Base
 	include Generic::Responsive

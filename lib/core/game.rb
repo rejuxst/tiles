@@ -1,8 +1,4 @@
 require 'pry'
-require "UI"
-require "generic"
-require "active"
-require 'database'
 class Game
 	include Generic::Base
 	include Generic::Responsive

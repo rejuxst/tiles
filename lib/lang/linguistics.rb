@@ -1,8 +1,6 @@
-require 'database'
 require 'treetop'
 require 'pry'
-require 'language'
-
+require 'lang/language'
 module Linguistics
 ###### Setup
 	Link = Struct.new( "LinkParserLink", :lcon, :rcon, :length,:index)
