@@ -1,6 +1,3 @@
-require "active"
-require "generic"
-require "UI"
 class Player
 	include Generic::Base
 	include Active

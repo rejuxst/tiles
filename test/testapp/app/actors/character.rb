@@ -1,4 +1,3 @@
-require 'actor'
 class Character < Actor
 	add_properties :hp	
 end

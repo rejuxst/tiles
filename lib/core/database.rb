@@ -1,4 +1,3 @@
-require 'config'
 require 'pry'
 require 'rexml/document'
 require 'rexml/element'

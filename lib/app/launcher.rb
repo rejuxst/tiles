@@ -1,8 +1,3 @@
-if !defined? Tiles
-	module Tiles
-	end
-end
-
 class  Tiles::Launcher
 class << self
 ############################
@@ -93,10 +88,10 @@ class << self
 	end
 	def core_load_from_gem
 	end
-	def core_load_from_source(dir)	
+	def core_load_from_source(dir)
 		$LOAD_PATH << File.absolute_path(dir)
-		core = File.absolute_path dir
-		Dir.open(dir) do |ent|
+		core = File.join(File.absolute_path(dir),'core')
+		Dir.open(core) do |ent|
 			ent.entries.each do |f|
 			begin
 			gem_original_require File.expand_path File.join(ent.to_path,f.partition('.')[0])

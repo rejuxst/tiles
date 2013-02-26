@@ -1,5 +1,3 @@
-require "generic"
-require 'pry'
 class Action
 	include Generic::Base
 	def init(args = {})

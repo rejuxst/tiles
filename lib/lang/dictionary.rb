@@ -1,4 +1,3 @@
-require 'linguistics'
 class Language::Dictionary
 # The dictionary module provides hooks to orgainze and store class data
 # in an interface that allows modifiable indexing methods to streamline 

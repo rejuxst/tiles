@@ -1,7 +1,7 @@
 require 'pry'
 require 'polyglot'
 require 'treetop'
-require 'treetop/scriptable'
+require 'grammars/scriptable'
 class Test_Script < Test::Unit::TestCase
 	Tiles::Application::Configuration.use_default_configuration rescue nil
 	def test_interactive
@@ -15,7 +15,6 @@ class Test_Script < Test::Unit::TestCase
 			\end
 			\goodbye
 		'
-		puts (b) ? b : a.failure_reason
-		binding.pry
+		assert_not_nil b, a.failure_reason
 	end
 end

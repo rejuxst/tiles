@@ -1,6 +1,4 @@
 require 'pry'
-require "generic"
-require 'database'
 class Tile
 	include Generic::Base
 	include Generic::Responsive

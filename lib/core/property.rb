@@ -1,4 +1,3 @@
-require 'database'
 class Property
 	extend Database
 	include Generic::Base

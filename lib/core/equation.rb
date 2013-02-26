@@ -1,7 +1,7 @@
 require 'pry'
 require 'treetop'
 require 'polyglot'
-require 'treetop/equationparser.treetop'
+require 'grammars/equationparser.treetop'
 module MathEquation
 	class Equation  < Treetop::Runtime::SyntaxNode	
 		def value
