@@ -55,10 +55,10 @@ module Generic
 		# add_property: Added the property prop to the database 
 		#		Alias the internal varibles as defined by the property
 		#	??	Add the support functions for the property to the object itself
-			prop = eval("#{prop.to_s.capitalize}") unless prop.is_a? Class 
+			prop = ::Tiles::Application::ObjectSpace.lookup_class(prop.to_s.downcase) unless prop.is_a? Class 
 				#TODO: Switch to Dictionary lookup of property 
 			instance = prop.new(value_hash)
-			add_to_db(instance,prop.to_s.downcase)
+			add_reference prop.to_s.downcase,instance, :add_then_reference => true
 			prop.required_references.each_pair do |name,params| 
 				add_reference name,instance,&params		
 			end

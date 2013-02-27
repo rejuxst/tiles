@@ -23,7 +23,7 @@ class Property < ::Tiles::BasicObject
 		raise "Can't add or default a property to contain properties"
 	end
 	def self.required_references
-		@references || {}
+		@references ||= {}
 	end
 #########################################
 ##### Instance methods ##################

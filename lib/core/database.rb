@@ -160,12 +160,11 @@ end
 ###################################################################
 ###################################################################
 # Instance db control functions
- def db_empty?
+ def db_empty? #TODO: Better version needed (i.e is it child empty? property empty? etc)
 	return @db.empty? rescue return true
  end
  def db_alive?
-	init_database if @db_alive.nil? #TODO: HIGH PRIORITY> Remove this line shouldn't be happening or should raise an error
-	return @db_alive
+	@db_alive == true
  end 
  def in_this_db?(item) #TODO: Suppose multiple depth levels
 	item.db_parent == self
@@ -241,7 +240,7 @@ end
 	db.each_value{|v| yield v unless !v.nil? && !Database.is_database?(v)}
   end
   def db_dump?()
-	return true;
+	true
   end
   def write_db(file)
 	file << db_dump()
@@ -258,8 +257,8 @@ end
 		this_db.add_element(d.to_s) if Database.is_data?(d)
 	#Database.convert_to_data(d)
 	end
-	for_each_instance do |i|
-		this_db.add_element(i.db_dump) if i.db_dump?()
+	for_each_db_entry do |i|
+		this_db.add_element(i.db_dump) if i.respond_to? :db_dump
 	end	
 	return this_db;
   end
@@ -268,7 +267,7 @@ end
   end
 ############## Misc Functions ##################################
   def inspect
-"#<#{self.class}:0x#{object_id.to_s(16)} | db: size(#{db.length}) => References: #{db.count{|ky,val| val.class <= Reference}}>"
+"#<#{self.is_a?(Class)?(self.name):(self.class.name)}:0x#{object_id.to_s(16)} | db: size(#{db.length}) => References: #{db.count{|ky,val| val.class <= Reference}}>"
   end
 
 end
