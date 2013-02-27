@@ -1,9 +1,7 @@
 require 'pry'
-class Game
-	include Generic::Base
+class Game < ::Tiles::BasicObject
 	include Generic::Responsive
 	include Active
-
 	add_initialize_loop do |*args|
 		add_reference		"map", Map.new,	:add_then_reference => true
 		add_reference_set 	"players",[],	:add_then_reference => true	

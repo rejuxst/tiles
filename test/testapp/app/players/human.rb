@@ -18,7 +18,7 @@ class SuperHuman_DEBUG < Human
 				when 'd' then  Proc.new { Move.left(controls["character"])  }
 				when 'a' then  Proc.new { Move.right(controls["character"]) } 
 				when 's' then  Proc.new { Move.up(controls["character"])    } 
-				when 't' then
+				when 't' then  :empty 
 			end
 			
 		end
@@ -40,20 +40,23 @@ class SuperHuman_DEBUG < Human
 			@game = opts[:game]
 		end
 		def recieve_package package
-			render package
+			case package
+				when :shell then @game.pry
+				else render(package)
+			end
 		end
 		def render package = @game
 			Ncurses.nl
 			@t1 = Time.now
 			render_mainwindow package
 			render_character_ui package
-			render_shell package
 			@t2 = Time.now
 			left_col = package.map.columns + 3
 			Ncurses.setpos(3,left_col)
 			Ncurses.addstr("Render Time: #{"%06f" % ((@t1 - @t2) * -1000.0)} ms")
 			Ncurses.addstr(" ") while Ncurses.inch.chr !=  ' '
 			Ncurses.refresh
+			render_shell package
 		end
 		def render_mainwindow game
 			game.map.tiles.each do |k,t|
