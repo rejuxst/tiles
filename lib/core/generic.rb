@@ -1,4 +1,3 @@
-
 #TODO: Deal with issues regarding class inheritance 
 module Generic
 	module Base
@@ -28,12 +27,15 @@ module Generic
 				initialize_loops.push blk
 			end
 			def initialize_loops
-				@initialize_loops ||= (self.superclass.initialize_loops() rescue @initialize_loops = [])
+				@initialize_loops ||= (self.superclass.initialize_loops() rescue @initialize_loops = []).dup
 			end
 			def enforce_reference(*ref_key)
 				@enforcable_references ||= []
 				ref_key.each{ |ref| @enforcable_references.push ref } 
 				@enforcable_references.collect {|ref| ref}
+			end
+			def self.included(base)
+				base.init_database
 			end
 
 		end	

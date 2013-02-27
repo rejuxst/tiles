@@ -1,5 +1,4 @@
-class Action
-	include Generic::Base
+class Action < ::Tiles::BasicObject
 	def init(args = {})
 		args = args[0] if args.is_a? Array
 		@effects = []

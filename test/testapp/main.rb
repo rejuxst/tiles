@@ -7,7 +7,6 @@ Tiles::Launcher.launch( "Crawl",
 		:app_dir => File.join(Dir.pwd,'test','testapp')	,
 		:safe_level => 0
 		) do |game,app|
-#	$thisgame = game
 	game.players << SuperHuman_DEBUG.new( :ui => SuperHuman_DEBUG::UI.new )
 	game.players[0].take_control Character.new(:ASCII => '@'), :reference => "character"
 	game.map.tile(10,10).add_to_db game.players[0].character

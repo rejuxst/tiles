@@ -1,7 +1,6 @@
-class Player
-	include Generic::Base
+class Player < ::Tiles::BasicObject
+	include Generic::Responsive
 	include Active
-
 	attr_reader :ui
 	add_initialize_loop do |arghash = {}|
 		add_reference_set 	"controls",[],:add_then_reference => true

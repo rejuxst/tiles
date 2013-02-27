@@ -46,7 +46,8 @@ class << self
 		@hello = 'hello'
 		load_application_from @opts[:app_dir]
 		@input_blk = Proc.new {} if @input_blk.nil?
-		game = eval(@game_string.to_s.capitalize) #TODO:This is a HUGE security flaw fix it
+		game = ::Tiles::Application::ObjectSpace.lookup_class(@game_string.to_s.capitalize) 
+		#TODO:This is a HUGE security flaw fix it
 		raise "#{game} is not a Tiles::Game" unless game <= Game
 		@game = game.new
 		@application = Tiles::Application.new( 

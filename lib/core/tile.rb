@@ -1,6 +1,5 @@
 require 'pry'
-class Tile
-	include Generic::Base
+class Tile < ::Tiles::BasicObject
 	include Generic::Responsive
 	attr_reader :ASCII #this should only be read as the data should be stored in database
 	def init(*args)

@@ -1,3 +1,11 @@
+begin
+	Pry.commands.alias_command 'c', 'continue'
+	Pry.commands.alias_command 's', 'step'
+	Pry.commands.alias_command 'n', 'next'
+	Pry.commands.alias_command 'f', 'finish'
+rescue 
+	nil
+end
 Pry.config.commands.command "dt", "Executes the given block in the current context. Outputs the execution time." do |bind|
 	#blk = eval("Proc.new { " + arg_string + "}")
 	#cc = eval('self',target)

@@ -1,6 +1,4 @@
-class Property
-	extend Database
-	include Generic::Base
+class Property < ::Tiles::BasicObject
 ###### Initialization ###################
 	add_initialize_loop do |*args| 
 		self.class.values.each_pair do |name,params| 

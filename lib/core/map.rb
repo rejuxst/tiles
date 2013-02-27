@@ -1,5 +1,4 @@
-class Map
-	include Generic::Base
+class Map < ::Tiles::BasicObject
 	include Generic::Responsive
 	include Active
 	add_initialize_loop do |*args|
