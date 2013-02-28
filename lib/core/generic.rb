@@ -2,17 +2,15 @@
 module Generic
 	module Base
 	#generic contains methods global to all instanciated objects
-	include Database
 		#note that 
 		module Extentions
-			include Database
 			def add_properties(*args)
 				@default_properties ||= (super.default_properties rescue @default_properties = [])
 				args.each {  |p| @default_properties.push p }
 				nil
 			end
 			def add_class_property(prop,value_hash = {})
-				prop = eval("#{prop.to_s.capitalize}") unless prop.is_a? Class 
+				 prop = ::Tiles::Application::ObjectSpace.lookup_class(prop.to_s.downcase) unless prop.is_a? Class && prop <= Property
 					#TODO: Switch to Dictionary lookup of property 
 				instance = prop.new(value_hash)
 				add_to_db(instance,prop.to_s.downcase)
@@ -40,7 +38,8 @@ module Generic
 
 		end	
 	        def self.included(base)
-			base.extend Extentions
+#			base.extend Database
+#			base.extend Extentions
 		end
 		def initialize(*args)
 			init_database
