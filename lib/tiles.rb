@@ -1,11 +1,13 @@
 module Tiles
 end
-%w[ app/application.rb app/config.rb app/launcher.rb app/security app/objectspace ].each { |r| require r }
+%w[ app/application.rb app/config.rb app/launcher.rb app/security app/objectspace 
+].each { |r| require r }
 %w[
 core/database.rb
 core/reference.rb
 core/generic.rb
 core/responsive.rb
+app/eventhandler.rb
 core/basicobject.rb
 core/thing.rb
 core/active.rb
