@@ -127,6 +127,9 @@ class Database::Reference
 		def db_alive?
 			@source.db_alive?
 		end
+		def to_a
+			collect {|r| r }
+		end
 		private 
 		def empty_key
 			i = 0;  (i  += 1) while hash.has_key? i

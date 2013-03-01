@@ -26,15 +26,17 @@ class Tiles::Application::EventHandler #NOTE: Should I make EventHandler a "Dele
 		@db.events.add event
 		case opts[:at]
 			when :now then @db.now[:events].add event
+			
 		end
 	end
 	# dequeue a subset of the event handlers for processing
-	def run_until(opts = {},&blk)
+	def run(opts = {},&blk)
 		# :time_interval => interval
 		# :event	 => EventClass
 		# :empty	 => process all outstanding events (empty is defined as all events  
-		case opts[:time_interval]
-			when :now then _run_now
+		case opts[:until]
+			when :now,:next_frame 	then _run_now
+			when :empty 		then _run_now until @db.events.to_a.empty?
 		end
 	end
 	def queue

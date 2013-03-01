@@ -17,9 +17,9 @@ class Test_EventHandler < Test::Unit::TestCase
 		a = ::Tiles::Application::EventHandler.new
 		b = Event.new :blk => Proc.new { $TEST_VAR = $TEST_VAR + 1 }
 		a.enqueue_event b, :at => :now
-		a.run_until :time_interval => :now
+		a.run :until => :now
 		assert_equal(1,$TEST_VAR, "Enqueued event didnt occur" )
-		a.run_until :time_interval => :now
+		a.run :until => :now
 		assert_equal(1,$TEST_VAR, "Enqueued event didnt occur the first time or occured more than once" )
 	end
 end
