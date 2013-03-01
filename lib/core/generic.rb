@@ -59,7 +59,7 @@ module Generic
 			instance = prop.new(value_hash)
 			add_reference prop.to_s.downcase,instance, :add_then_reference => true
 			prop.required_references.each_pair do |name,params| 
-				add_reference name,instance,&params		
+				add_reference name,instance, :if_in_use => :overwrite, &params
 			end
 		end
 	end

@@ -1,4 +1,4 @@
-class Action < ::Tiles::BasicObject
+class Action < Event
 	def init(args = {})
 		args = args[0] if args.is_a? Array
 		@effects = []
@@ -7,6 +7,7 @@ class Action < ::Tiles::BasicObject
 		with(args[:with])
 		using(args[:using])
 		via(args[:path])
+		super
 	end
 	def via path
 		@path = []

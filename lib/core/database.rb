@@ -80,11 +80,23 @@ end
 ###################################
 ## Database Transactions ##########
 # NOTE: All database transations should return self unless destructive 
-  def add_to_db(input,key = nil)
+  def add_to_db(input,key = nil,opts = {})
   #TODO: Handle repeating a already selected key (raise an error or return nil?)
 #	input.each { |i| add_to_db(i) } if input.is_a? Array
+	key ||= opts[:key]
 	the_key = (key.nil?) ? assign_key(input) : key
-	db[the_key] = input
+	if db.has_key?(the_key) 
+		return the_key if db[the_key] == input
+		case opts[:if_in_use]
+			when :append 	then db[the_key].add input 
+			when :overwrite then db[the_key] = input
+			when :destroy_entry then destroy_entry(db[the_key]); db[the_key] = input
+			when :destroy_input then input.destroy_self(); return nil
+			when nil	then raise "Attempted to overwrite an already existing key"
+		end
+	else
+		db[the_key] = input
+	end
 	input.set_key(the_key,self) if Database.is_database?(input)
 	return the_key
   end
@@ -123,26 +135,26 @@ def add_reference(key,target,opts = {} ,&blk)
 		raise "Invalid key type. Key for Reference should be of type String, key is a #{key.class}" 
 	end
 	add_reference_set(key,target,opts) if target.is_a? Array
-	add_to_db(target) if opts[:add_then_reference]
-	add_to_db Reference.new(self,target,:proc => blk) , key
+	add_to_db(target,:if_in_use => opts[:add_then_reference]) if opts[:add_then_reference]
+	add_to_db Reference.new(self,target,:proc => blk) , key, :if_in_use => opts[:if_in_use]
 end
 # A reference is added as a chain of object keys. it is stored as chain of keys starting from any database 
-def add_reference_chain(key,chain,&blk)
+def add_reference_chain(key,chain,opts = {},&blk)
 	unless key.class <= String && key.to_i.to_s != key
 		raise "Invalid key type. Key for Reference should be of type String, key is a #{key.class}" 
 	end
-	add_to_db Reference::Chain.new(self,chain, :proc => blk) , key 
+	add_to_db Reference::Chain.new(self,chain, :proc => blk) , key, :if_in_use => opts[:if_in_use] 
 end
 def add_reference_collection(key,target,opts = {},&blk)
 	raise "Invalid target must be an array is a #{target.class}" unless target.is_a? Array
-	add_to_db Reference::Collection.new(self,target,:proc => blk) , key
+	add_to_db Reference::Collection.new(self,target,:proc => blk) , key, :if_in_use => opts[:if_in_use]
 end
 def add_reference_set(key,target,opts = {})
 	unless key.class <= String && key.to_i.to_s != key
 		raise "Invalid key type. Key for Reference should be of type String, key is a #{key.class}" 
 	end
-	target.each { |t| add_to_db t }  if opts[:add_then_reference]
-	add_to_db Reference::Set.new(self,target) , key
+	target.each { |t| add_to_db(t,:if_in_use => opts[:add_then_reference]) }  if opts[:add_then_reference]
+	add_to_db Reference::Set.new(self,target) , key, :if_in_use => opts[:if_in_use]
 end
 def add_variable(key,target,opts = {})
 	unless (key.class <= String && key.to_i.to_s != key) || key.nil?

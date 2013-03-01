@@ -17,7 +17,7 @@ class Language
 	class Grammar
 		extend Database	
 		def self.add_class(wordclass,equation)
-			add_reference(wordclass,equation) {|src,tar| ::Linguistics.parse(tar)}
+			add_reference(wordclass,equation,:if_in_use => :overwrite) {|src,tar| ::Linguistics.parse(tar)}
 		end
 		def self.[]=(key,value)
 			add_class(key,value)

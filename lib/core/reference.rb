@@ -30,6 +30,9 @@ class Database::Reference
 		return @target if @target.db_alive? and @source.db_alive? rescue nil
 		nil
 	end
+	def db_parent
+		@source
+	end
 	class Chain < ::Database::Reference
 		def initialize(source,target_chain,opts = {}, &blk)
 		raise "Source location is not a Database Reference cannot be generated" if !Database.is_database?(source)
@@ -39,7 +42,6 @@ class Database::Reference
 			unless @target_chain.all? {|element| Database.is_database_entry_class?(element.class)}
 				raise "Invalid Reference::Chain element in chain #{@target_chain}"
 			end
-			#raise "Unable to resolveto non-nil object on first try" if resolve().nil?
 		end
 		def resolve
 			local_varible = [@source]
@@ -50,8 +52,6 @@ class Database::Reference
 			end
 			return (local_varible.length < 2) ? local_varible[0] : local_varible
 		end
-	end
-	class Collection < ::Database::Reference
 	end
 	class ::Database::Reference::Set < ::Database::Reference
 		include Enumerable
@@ -67,8 +67,9 @@ class Database::Reference
 			end
 		end
 		def each &blk
-			@hash.each do |key,ele| 
-				next unless !ele.respond_to?(:db_alive?) || ele.db_alive?() 
+			@hash.keys.each do |key| 
+				ele = index(*key)
+				next if ele.nil? || (ele.respond_to?(:db_alive?) && !ele.db_alive?()) 
 				if block_given?  
 					(blk.parameters.length < 2) ? blk.call(ele) : blk.call(key,ele)
 				else
@@ -106,14 +107,13 @@ class Database::Reference
 			] = item
 			self
 		end
+		def blank_set(key)
+			@hash[(key.is_a?(Array))? key :[key]] = self.class.new(@source,[])
+		end
 		def delete(object)
 			@hash.delete_if	{ |k,v| object == k or object == v} 
 		end
 		def resolve
-		#	@hash.delete_if do |k,ele| 
-		#		!ele.db_alive? || 
-		#		(ele.is_a?(::Database::Reference) && ele.db_parent != self.db_parent)
-		#	end
 			self
 		end
 		def what_died?
@@ -134,6 +134,25 @@ class Database::Reference
 		end
 		def hash
 			@hash ||= {}
+		end
+	end
+	class Collection < ::Database::Reference::Set 
+		def add(item, opts = {})
+			if item.is_a? ::Tiles::BasicObject
+				(item.db_parent == @source)? super : raise
+				item = ::Database::Reference.new(@source,item)
+			elsif item.is_a? ::Database::Reference
+				(item.db_parent == @source)? super : raise
+			else 
+				item = ::Database::Reference::Chain.new(@source,item)		
+			end
+			super
+		rescue
+			raise "Can't add an object to a collection that isn't a ::Database::Reference, 
+				a valid key chain, or a database element owned by the source => #{@source}".delete("\n\t")
+		end
+		def index(*ind)	
+			@hash[ind].resolve rescue nil
 		end
 	end
 	class Variable < ::Database::Reference
@@ -164,7 +183,7 @@ class Database::Reference
 			@var.<=> other
 		end
 		def ===(other)
-			@var.=== other
+			@var.=== other || other.class === self.class
 		end
 		def method_missing(method_sym,*arguments,&block)
 			if @var.respond_to?(method_sym)

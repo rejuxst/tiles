@@ -9,6 +9,7 @@ core/generic.rb
 core/responsive.rb
 app/eventhandler.rb
 core/basicobject.rb
+core/event.rb
 core/thing.rb
 core/active.rb
 core/ui.rb 

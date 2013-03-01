@@ -97,7 +97,5 @@ class Test_Linguistics < Test::Unit::TestCase
 		assert_equal(['large'],
 			sen.subject.adjectives.collect {|adj| adj.word}, 
 			"Not the adjective")
-	rescue Exception => e
-		assert(false, "Failed => #{e.backtrace.join("\n")}")
 	end
 end
