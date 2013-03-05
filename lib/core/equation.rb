@@ -4,8 +4,8 @@ require 'polyglot'
 require 'grammars/equationparser.treetop'
 module MathEquation
 	class Equation  < Treetop::Runtime::SyntaxNode	
-		def value
-			additive.value
+		def value(src = nil)
+			additive.value(src)
 		end
 		def source=(input)
 			@source = input
@@ -24,9 +24,9 @@ module MathEquation
 		end
 	end
 	class Operation < Treetop::Runtime::SyntaxNode
-		def value
+		def value(src = nil)
 			other_terms.elements.inject(start.value) do |res,ele| 
-				res.send(ele.operator.text_value,ele.term.value) 
+				res.send(ele.operator.text_value,ele.term.value(src)) 
 			end
 		end
 		def source
@@ -40,7 +40,7 @@ module MathEquation
 		def is_variable?
 			false
 		end
-		def value
+		def value(src = nil)
 			text_value.to_i
 		end
 		def source
@@ -74,12 +74,12 @@ class Equation
 	def parse_failure?
 		!@equation.nil?
 	end
-	def resolve
+	def resolve(src = nil)
 		unless @equation.has_target?
-			@equation.value
+			@equation.value(src)
 		else
 			raise "No Source database given for equation with output" if @equation.source.nil?
-			@equation.target_value.set @equation.value
+			@equation.target_value.set @equation.value(src)
 		end
 	end
 	def to_s
