@@ -6,7 +6,8 @@ class Language::Dictionary
 # API for file access.
 
 # Dictionary creation API is integrated into Generic (EDIT: Is this for sure?)
-	extend Database
+	extend Database::Data
+	extend Database::Base
 	def self.add_word(word,wordclass) #TODO: Needs lots of improvements
 		add_to_db Definition.new(word,wordclass), word, :if_in_use => :overwrite
 	end

@@ -20,7 +20,7 @@ class Database::Reference
 	end
 	def initialize(source,target,opts = {}, &blk)
                 # Input validation checks
-		raise "Source location is not a Database Reference cannot be generated" if !Database.is_database?(source)
+		raise "Source location is not a Database Reference cannot be generated" if !source.is_database?
 #		raise "Target location is not a Database Try making a local reference" if !Database.is_database?(target)
                 @source = source
 		@target = target

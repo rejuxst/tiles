@@ -22,7 +22,7 @@ class Test_Database < Test::Unit::TestCase
 	
 	# Printing support function for testing Database suggested use with non_interactive? set false
 	def print_tree(tree,tablvl = 0)
-		puts "=" + ">" * tablvl + "#{tree.key} = #{tree.db_alive ? "alive" : "dead"}"
+		puts "=" + ">" * tablvl + "#{tree.key} = #{tree.db_alive? ? "alive" : "dead"}"
 		tree.for_each_instance { |e| print_tree(e,tablvl+1)}
 		return nil
 	end
@@ -36,7 +36,7 @@ class Test_Database < Test::Unit::TestCase
 			t3.for_each_db_entry { |e| list << e }
 			t3.for_each_db_entry { |e| e.for_each_db_entry { |f| list << f} }
 			t3.for_each_db_entry { |e| e.for_each_db_entry { |f|   f.for_each_db_entry { |g| list << g} } }
-		end rescue assert(false, "Failed to correctly generate assertion list") and return false
+		end rescue assert(false, "Failed to correctly generate tree list") and return false
 		# Size check: add_to_db works
 		assert_equal(15,list.length, "Expected 15 elements in the Tree")
 		return list
@@ -48,18 +48,18 @@ class Test_Database < Test::Unit::TestCase
 		list = test_add
 		list[7].destroy_self
 		sum = 0
-		list.each { |l| sum = sum +1 if l.db_alive } 
-		assert(!list[7].db_alive && sum == 14 , "Failed on Destruction of a Database Leaf node")
+		list.each { |l| sum = sum +1 if l.db_alive? } 
+		assert(!list[7].db_alive? && sum == 14 , "Failed on Destruction of a Database Leaf node")
 		# Singluar Destruction: Destroy a branch
 		list[4].destroy_self
 		sum = 0
-		list.each { |l| sum = sum +1 if l.db_alive } 
-		first_test = !list[7].db_alive && sum == 11 && !list[4].db_alive && !list[9].db_alive && !list[10].db_alive
+		list.each { |l| sum = sum +1 if l.db_alive? } 
+		first_test = !list[7].db_alive? && sum == 11 && !list[4].db_alive? && !list[9].db_alive? && !list[10].db_alive?
 		assert(first_test , "Failed to correctly destroy a branch" )
 		# Singluar Destruction: Destroy a nested branch
 		list[2].destroy_self
 		sum = 0
-		list.each { |l| sum = sum +1 if l.db_alive } 
+		list.each { |l| sum = sum +1 if l.db_alive? } 
 		large_pass = [4,5,6,7,9,10,11,12,13,14].all?{ |n| !list[n].db_alive?} && sum == 4
 		assert(large_pass, "Large Branch Deletion Failed")
 	rescue
@@ -146,7 +146,8 @@ class Test_Database < Test::Unit::TestCase
 	###########
 	# Test class for interacting with Database instances
 	class TDB 
-		include ::Database
+		include ::Database::Data
+		include ::Database::Base
 		def initialize()
 			init_database
 		end

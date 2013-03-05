@@ -6,10 +6,10 @@ require 'rexml/element'
 #	- Add private/public/protected db access
 #	- Modify default setup for acceptabble key values (i.e exclude '#' from reference names to support equation)
 #	- Add module level and instance level security protocols
-#	- MAYBE switch to class inheritance model over module (most of the semantic associated with db suggest this)
 #	- Deal with handling  save/loading with regards to configuration and initializiation.
-#	- Adjust the semantic to allow for classes to be databases as well
-#	- Allow for indexing with multiple values
+#	- Seperate Database::Base and Database::Data so that ther can be Database::Base that are not also Datas
+#		(This semantic should be especially useful for Classes as they really shouldn't "Data" in the strict sense
+#			i.e they should not be killable) 
 module Database
 
 ### Making Database Configurable ###
@@ -20,7 +20,7 @@ module Database
   def self.read_db(xmlstring)	
   end
   def self.is_database?(input)
-	(input.is_a? Class) ? input.is_database? : input.class.include?(Database) rescue return false
+	input.respond_to?(:is_database?) && input.is_database?
   end
   def self.is_data?(input)
 	return !is_database?(input)
@@ -47,11 +47,6 @@ module Database
 #####################################
 configuration_method :add_database_entry_class, :set_assign_key
 ### General Setup ##################
-#self.add_database_entry_class(Class) { |ky|  @db[ky].nil?() ? nil : @db[ky].resolve }
-#self.add_database_entry_class(Symbol) { |ky| @db[ky] }
-#self.add_database_entry_class(Fixnum) { |ky| @db[ky] }
-#self.add_database_entry_class(String) do |ky| 
-#self.set_assign_key do 
 default_configuration_call(:add_database_entry_class,
 		Class) { |ky|  @db[ky].nil?() ? nil : @db[ky].resolve }
 default_configuration_call(:add_database_entry_class,
@@ -65,18 +60,62 @@ default_configuration_call(:set_assign_key) do
 	@max_key = 0 if @max_key.nil?
 	@max_key = @max_key + 1
 end
-##################################### 
-##%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%######
+end
+module Database::Data
 ### Database Variables   ###########
   attr_reader :db_parent # The owner of this Database object, if nil this is the Master Database 
   attr_reader :key	 # The Key for this database within the db_parent
   attr_reader :max_key	 # The total number of assigned keys (@max-key-1 is last assigned key) @max_key is next assignable key
+
+	# Set the master key for this entry
+	def set_key(key_val,parent)
+		@key = key_val
+		@db_parent = parent
+	end
+
+	# This is a status flag to prevent references from resolving dead pointers 
+	def db_alive? 
+		@db_alive == true
+	end 
+
+	# Destroy the record of one's self in the containing db
+	def destroy_record_of_self()
+		db_parent.remove_from_db(self)
+		return self
+	end
+	# Destroies self frmo a db_alive? prespective
+	def destroy_self
+		destroy_record_of_self
+		@db_alive = false
+		return nil
+	end
+
+	def move_self_to_db(target_db)
+		@db_parent.remove_from_db(self) if Database.is_database?(@db_parent)
+		target_db.add_to_db(self)
+		return self
+	end
+
+	def init_data(parent = nil)
+		parent.add_to_db(self) unless parent.nil? || !db_parent.nil?
+		@db_alive = true
+	end
+
+	def is_data?
+		true
+	end
+
+	def is_database?
+		false
+	end
+end
+module Database::Base
+##################################### 
   # The storage array for the database
   def db
 	@db = {} if @db.nil?
 	return @db
   end
-  attr_reader :db_alive  # This is a status flag to prevent references from resolving dead pointers 
 ###################################
 ## Database Transactions ##########
 # NOTE: All database transations should return self unless destructive 
@@ -136,31 +175,31 @@ def add_reference(key,target,opts = {} ,&blk)
 	end
 	add_reference_set(key,target,opts) if target.is_a? Array
 	add_to_db(target,:if_in_use => opts[:add_then_reference]) if opts[:add_then_reference]
-	add_to_db Reference.new(self,target,:proc => blk) , key, :if_in_use => opts[:if_in_use]
+	add_to_db Database::Reference.new(self,target,:proc => blk) , key, :if_in_use => opts[:if_in_use]
 end
 # A reference is added as a chain of object keys. it is stored as chain of keys starting from any database 
 def add_reference_chain(key,chain,opts = {},&blk)
 	unless key.class <= String && key.to_i.to_s != key
 		raise "Invalid key type. Key for Reference should be of type String, key is a #{key.class}" 
 	end
-	add_to_db Reference::Chain.new(self,chain, :proc => blk) , key, :if_in_use => opts[:if_in_use] 
+	add_to_db Database::Reference::Chain.new(self,chain, :proc => blk) , key, :if_in_use => opts[:if_in_use] 
 end
 def add_reference_collection(key,target,opts = {},&blk)
 	raise "Invalid target must be an array is a #{target.class}" unless target.is_a? Array
-	add_to_db Reference::Collection.new(self,target,:proc => blk) , key, :if_in_use => opts[:if_in_use]
+	add_to_db Database::Reference::Collection.new(self,target,:proc => blk) , key, :if_in_use => opts[:if_in_use]
 end
 def add_reference_set(key,target,opts = {})
 	unless key.class <= String && key.to_i.to_s != key
 		raise "Invalid key type. Key for Reference should be of type String, key is a #{key.class}" 
 	end
 	target.each { |t| add_to_db(t,:if_in_use => opts[:add_then_reference]) }  if opts[:add_then_reference]
-	add_to_db Reference::Set.new(self,target) , key, :if_in_use => opts[:if_in_use]
+	add_to_db Database::Reference::Set.new(self,target) , key, :if_in_use => opts[:if_in_use]
 end
 def add_variable(key,target,opts = {})
 	unless (key.class <= String && key.to_i.to_s != key) || key.nil?
 		raise "Invalid key type. Key for Reference should be of type String, key is a #{key.class}" 
 	end
-	r = add_to_db Reference::Variable.new(self,target) , key 
+	r = add_to_db Database::Reference::Variable.new(self,target) , key 
 	case opts[:return]
 		when :variable,"variable" then self[key]
 		when :key,"key"		  then key
@@ -175,7 +214,7 @@ end
  def db_empty? #TODO: Better version needed (i.e is it child empty? property empty? etc)
 	return @db.empty? rescue return true
  end
- def db_alive?
+ def db_alive? # This is a status flag to prevent references from resolving dead pointers 
 	@db_alive == true
  end 
  def in_this_db?(item) #TODO: Suppose multiple depth levels
@@ -204,10 +243,6 @@ end
 ### Key Management functions ########################
   def assign_key(input)
 	return instance_exec input, &Database.assign_key
-  end
-  def set_key(key_val,parent)
-	@key = key_val
-	@db_parent = parent
   end
   def find_if(&blk)
 	for_each_db_entry { |v| return v if yield v } 
@@ -274,12 +309,12 @@ end
 	end	
 	return this_db;
   end
+############## Misc Functions ##################################
   def is_database?
 	true
   end
-############## Misc Functions ##################################
-  def inspect
-"#<#{self.is_a?(Class)?(self.name):(self.class.name)}:0x#{object_id.to_s(16)} | db: size(#{db.length}) => References: #{db.count{|ky,val| val.class <= Reference}}>"
-  end
 
+  def inspect
+"#<#{self.is_a?(Class)?(self.name):(self.class.name)}:0x#{object_id.to_s(16)} | db: size(#{db.length}) => References: #{db.count{|ky,val| val.class <= Database::Reference}}>"
+  end
 end

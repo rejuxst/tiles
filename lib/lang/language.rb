@@ -15,7 +15,7 @@ class Language
 		subclass.load_parser
 	end
 	class Grammar
-		extend Database	
+		extend Database::Base
 		def self.add_class(wordclass,equation)
 			add_reference(wordclass,equation,:if_in_use => :overwrite) {|src,tar| ::Linguistics.parse(tar)}
 		end

@@ -82,7 +82,8 @@ class Tiles::Application::EventHandler #NOTE: Should I make EventHandler a "Dele
 	end
 end
 class Tiles::Application::EventHandler_Delegated
-	include Database
+	include Database::Data
+	include Database::Base
 	def initialize
 		init_database
 		add_reference_collection "repeating",  		[]

@@ -35,7 +35,8 @@ module Generic::Responsive
 
 end
 class Generic::Responsive::Database
-	include Database
+	include Database::Data
+	include Database::Base
 	def initialize
 		init_database
 	end

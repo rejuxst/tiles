@@ -37,10 +37,6 @@ module Generic
 			end
 
 		end	
-	        def self.included(base)
-#			base.extend Database
-#			base.extend Extentions
-		end
 		def initialize(*args)
 			init_database
 			self.class.enforce_reference().each {|ref| self.add_reference ref, nil , :add_then_reference => true }
