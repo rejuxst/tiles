@@ -1,8 +1,9 @@
 require 'pry'
-# TODO: Set shoudl probably become a database itself because there is a clear need for 
+# TODO: Set should probably become a database itself because there is a clear need for 
 #	References to be blank (with a key). For Example lets say the game wants a list of all
 #	objects 'controlled' by all the players there would need to be a bunch of references 
 #	that the game doesn't need to know about but have to exist to maintain connectivity
+#	or to allow calling all_controlled_creatures without throwing an error.
 class Database::Reference
 	@@valid_reference_classes = [String, Class]
 	def self.add_valid_reference_class(the_class)
