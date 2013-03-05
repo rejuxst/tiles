@@ -3,15 +3,15 @@ end
 %w[ app/application.rb app/config.rb app/launcher.rb app/security app/objectspace 
 ].each { |r| require r }
 %w[
-core/database.rb
+modules/database.rb
 core/reference.rb
-core/generic.rb
-core/responsive.rb
+modules/generic.rb
+modules/responsive.rb
+modules/active.rb
 app/eventhandler.rb
 core/basicobject.rb
 core/event.rb
 core/thing.rb
-core/active.rb
 core/ui.rb 
 core/player.rb
 core/game.rb
