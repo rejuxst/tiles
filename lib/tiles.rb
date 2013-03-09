@@ -1,6 +1,6 @@
 module Tiles
 end
-%w[ app/application.rb app/config.rb app/launcher.rb app/security app/objectspace 
+%w[ app/application.rb app/config.rb app/launcher.rb app/security app/objectspace app/factories 
 ].each { |r| require r }
 %w[
 modules/database.rb

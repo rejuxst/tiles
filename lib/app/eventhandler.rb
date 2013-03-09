@@ -92,6 +92,7 @@ class Tiles::Application::EventHandler_Delegated
 		add_reference_collection "handlers"	,	[]
 		create_timeframe("now")
 	end
+
 	def create_timeframe(id,opts = {})
 		add_reference_collection id, [],opts
 		self[id].blank_set(:events)
@@ -107,6 +108,7 @@ class Tiles::Application::EventHandler_Delegated
 			add_reference_chain "now", now[:next],  :if_in_use => :destroy_entry
 		end	
 	end
+	
 end
 ## ???? Should this exist ???? ###
 class Tiles::Application::SetHandler

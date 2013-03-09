@@ -1,11 +1,29 @@
-module Tiles::Time::Generator < BasicObject
-	def self.generate_timespace(opts = {})
-		# "%s %w %q" => [:days, :weeks, :years] (Definition of to String from string format)
-		# Symbol => String/Proc   (define the function Symbol that casts the time value using String as a Equation)
-		#			ex. :today => { |raw| %w[Monday Tuesday Wendsday Thursday ....][raw % 7] } (block)
-		#			ex. :days  => :raw (default reference)
-		#			ex. :months => "raw % 30" (Equation)
-		# :valid_units	=> Array  (of the listed Symbols that themselves are valid units)
-		#				This allows for "dimensional analysis" i.e "years = date - month - day"
+class Tiles::Time
+	include Comparable
+	def initialize(obj = nil)
+		@value = obj
+	end
+	def hash
+		raw_value.hash
+	end
+	def raw_value
+		@value
+	end
+	def <=>(other)
+		raw_value <=> _get_raw_value(other)
+	end
+	def ==(other)
+		raw_value == _get_raw_value(other)
+	end
+	def ===(other)
+		raw_value === other.send(self.class.downcase.to_sym)
+	end
+	private
+	def _get_raw_value(other)
+		if responds_to? :raw_value
+			other.raw_value
+		else
+			other
+		end
 	end
 end
