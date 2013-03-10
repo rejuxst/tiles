@@ -12,8 +12,21 @@ class Tiles::Application::EventHandler #NOTE: Should I make EventHandler a "Dele
 #	now()	=> executed as the current queue head set. Priority within the set is resolved to include now()
 #	after(blk) => a priority blk
 #	before(blk) => a priority blk
+	include Database::Data
+	include Database::Base
+	extend Database::Base
+
 	def initialize
-		@db = Tiles::Application::EventHandler_Delegated.new #init_database
+		init_database
+		add_reference_collection "repeating",  		[]
+		add_reference_collection "periodically_do",	[]
+		add_reference_collection "events"	,	[]
+		add_reference_collection "handlers"	,	[]
+		create_timeframe("now")
+	end
+	def initialize
+		@space = []
+		@eventkey = 0 
 	end
 	def enqueue(opts = {})
 		# :interval 	=> 	interval: 	last_occurance + interval = enqueue_event(event)
@@ -21,32 +34,16 @@ class Tiles::Application::EventHandler #NOTE: Should I make EventHandler a "Dele
 		# :before/:after/.... => blk... :	More verbose methodes of enqueueing
 		# :in_order	=>	blk	:	priority coding for set order
 		# :reference_as => 	name	:	how to dereference the event from the queue 
-		event ||= opts[:event]
-		@db.add_to_db event
-		@db.events.add event
-		at = case opts[:at]
-			when :now then [:now]
-			when _proc_isa_time?, String
-				create_timeframe(opts[:at]) unless timeframe_exists? opts[:at]
-				[get_timeframe(opts[:at])]
-			when :next_timeframe then [:now,:next]
-			when Fixnum	then [:now] + [:next] * opts[:at]
-		end.collect { |c| c.to_s }
-		@db[*at][:events].add event
+		
 	end
 	# dequeue a subset of the event handlers for processing
 	def run(opts = {},&blk)
 		# :time_interval => interval
 		# :event	 => EventClass
 		# :empty	 => process all outstanding events (empty is defined as all events  
-		case opts[:until]
-			when :now,:next_frame 	then _run_now
-			when :empty 		then _run_now until @db.events.to_a.empty?
-		end
 	end
 	def queue
-		@db.events
-	end	
+	end
 	# Allows Scoping and generation of event handlers 
 	#	(primarly for implimenting reliable scoped/temporary 
 	#		event handlers and propagating them upstream)
@@ -84,19 +81,68 @@ end
 class Tiles::Application::EventHandler_Delegated
 	include Database::Data
 	include Database::Base
-	def initialize
-		init_database
-		add_reference_collection "repeating",  		[]
-		add_reference_collection "periodically_do",	[]
-		add_reference_collection "events"	,	[]
-		add_reference_collection "handlers"	,	[]
-		create_timeframe("now")
+###### Overridding Database Definitions #####
+	def assign_key(obj)
+		super(obj)
+		case 
+			when obj.is_a?(Event) then 			"even:#{@max_key}"
+			when obj.is_a?(::Database::Reference) then 	"ref:#{@max_key}"
+		end
 	end
+#############################################
+	def initialize(opts = {})
+		init_database	
+		add_variable 'timespace' opts[:time_space]
+		add_variable 'last_frame'   , 		nil
+		add_reference_collection 'events', 		[] 
+		add_reference_collection 'frames', [
+				add_reference_set( opts[:start_at] || 0, [] )
+				]
+		add_variable 'next_keyframe', db_get.resolve().to_a.min{ |x,y| x <=> y}.value		
+		#opts[:start_at] || 0
+	end
+	def execute_frame()
+		if block_given?
+			yield self[db_get("next_keyframe")]
+		else
+			self[db_get("next_keyframe")].preform
+		end
+		db_get('last_frame').set db_get('next_keyframe').value
+		
+	end
+
+	def move_keyframe(key)
+		db_get('next_keyframe').set key
+	end
+	def enqueue(opts = {})
+		event = opts[:event]
+		at = opts[:at] || event.time
+		raise ArgumentException if event.nil? || at.nil?
+		case  
+			when !(at_k = db_get(opts[:at])).nil? 			then _enqueue_to_frame(event,at_k)
+			when !timespace.nil? && timespace.entity?(opts[:at]) 	then _create_frame(opts[:at]) 
+		end 
+	rescue ArgumentException => e
+		raise e, "Didn't provide sufficient and correct arguments to enqueue call.
+			  Also possible that the provided event didn't have a time function => #{opts}".delete("\n\t")
+	end
+### var_readers
+	def next_keyframe
+		db_get('next_keyframe')
+	end
+	def last_frame
+		db_get('last_frame')
+	end
+################
+
 
 	def create_timeframe(id,opts = {})
 		add_reference_collection id, [],opts
 		self[id].blank_set(:events)
 		self[id]
+	end
+	def empty?
+		self["events"].to_a.empty?
 	end
 	def update_nowframe
 		now[:events].each { |e| e.destroy_self if e.respond_to? :destroy_self}
@@ -107,6 +153,14 @@ class Tiles::Application::EventHandler_Delegated
 		else	
 			add_reference_chain "now", now[:next],  :if_in_use => :destroy_entry
 		end	
+	end
+	private
+	def _enqueue_to_frame(event,at)
+		add_to_db event
+		at.add event.key
+	end
+	def _create_frame(at)
+		db_get('frames').add add_reference_set timespace.to_e(at,self), []
 	end
 	
 end

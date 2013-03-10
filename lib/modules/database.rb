@@ -123,11 +123,11 @@ module Database::Base
   #TODO: Handle repeating a already selected key (raise an error or return nil?)
 #	input.each { |i| add_to_db(i) } if input.is_a? Array
 	key ||= opts[:key]
-	the_key = (key.nil?) ? assign_key(input) : key
+	the_key = (key.nil?) ? assign_key(input) : ((key.is_a?(::Database::Reference::Variable)) ? key.value : key)
 	if db.has_key?(the_key) 
 		return the_key if db[the_key] == input
 		case opts[:if_in_use]
-			when :append 	then db[the_key].add input 
+			when :append 	then add_to_db(input,key); db[the_key].add(input); #Append to the set after adding to this db 
 			when :overwrite then db[the_key] = input
 			when :destroy_entry then destroy_entry(db[the_key]); db[the_key] = input
 			when :destroy_input then input.destroy_self(); return nil
@@ -136,7 +136,7 @@ module Database::Base
 	else
 		db[the_key] = input
 	end
-	input.set_key(the_key,self) if Database.is_database?(input)
+	input.set_key(the_key,self) if input.is_data?#Database.is_database?(input)
 	return the_key
   end
   def remove_from_db(input)      # Should never be called by designer (use only for moving)

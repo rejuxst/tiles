@@ -5,6 +5,7 @@ require 'pry'
 #	that the game doesn't need to know about but have to exist to maintain connectivity
 #	or to allow calling all_controlled_creatures without throwing an error.
 class Database::Reference
+	include Database::Data
 	@@valid_reference_classes = [String, Class]
 	def self.add_valid_reference_class(the_class)
 		raise "Not a class #{the_class.class}" if not the_class.is_a? Class
@@ -188,6 +189,14 @@ class Database::Reference
 		end
 		def ===(other)
 			@var.=== other || other.class === self.class
+		end
+		def == (other)
+			super(other) || @var == other
+		end
+		def hash		#TODO: Figure out what happens if a Database key is set with a variable
+					#	Should it error/self.value/ or exist as a mutatable object? 
+					#	mutatable meaning => Variable.new(dbTnst,1); dbInst.add_to_db(0,var); var.set(2); puts dbInst[1] # ????
+			@var.hash
 		end
 		def method_missing(method_sym,*arguments,&block)
 			if @var.respond_to?(method_sym)

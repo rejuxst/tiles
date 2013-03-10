@@ -15,8 +15,10 @@ class Language::Dictionary
 		add_word(key,value)
 	end
 	class Definition
+		include Database::Data
 		def initialize(word,wordclass)
 			raise "Invalid Dictionay::Definition input" unless word.is_a? ::String and wordclass.is_a? ::String
+			init_data
 			@word = word
 			@wordclass = wordclass
 		end
