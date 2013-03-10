@@ -45,27 +45,55 @@ class Tiles::Factories::ComparableFactory
 	def ==(value);	_insert_obj(value,0);	end
 	def <(value);	_insert_obj(value,-1);	end
 	#########
-
+	## Space Level operators
+	def <<(obj)
+		if obj.is_a? self.class
+			@pointer = obj.pointer
+			@splvl = @space.length + obj.splvl
+			@space << obj.fspace	
+		elsif obj.is_a? Class
+			@space << obj
+			@splvl = @space.length - 1
+			@pointer = 0
+		else
+			raise "Can't append #{obj} obj must be a Class or another ComparableFactory" 
+		end
+	end
+	def shift(space)
+		if obj.is_a? self.class
+			@pointer = obj.pointer
+			@splvl = obj.splvl
+			@space.shift  obj.fspace	
+		elsif obj.is_a? Class
+			@space.shift  obj
+			@splvl = 0
+			@pointer = 0
+		else
+			raise "Can't append #{obj} obj must be a Class or another ComparableFactory" 
+		end
+	end
+	#######
 	def <=>
 		raise "Class is not Comparable is a Comparision construction class. The spaceship operator can only be used in conjunction with a proc"
 	end
 	def initialize(opts = {})	
 		@name = opts[:name]
-		@space = [[]]
+		@space = [[[  ]]]
+		@splvl = 0
 		@pointer = nil 
 	end
 	def generate()
 	 	self.class.register_space @name, ComparisonSpace.new(@space)
 	end
 	def move_to(obj)
-		@pointer = @space.index { |eqset| eqset.index(obj) }
+		@pointer = space.index { |eqset| eqset.index(obj) }
 		raise "Unable to locate #{obj} in Factory may not have been included yet" if @pointer.nil?
 		self
 	end
 	# operate on a set
 	def set(array)
 		raise "Input is not an array of already included objects" unless array.is_a?(Array) && 
-							 array.all? { |a| @space.flatten(1).any? { |c| c == a } }
+							 array.all? { |a| space.flatten(1).any? { |c| c == a } }
 		@pointer = array 
 		self
 	end
@@ -79,17 +107,31 @@ class Tiles::Factories::ComparableFactory
 	# move to the lowest comparison set nothing else in the space currently returns true to min > obj
 	def min(); @pointer = 0; 	self;		end
 	# move to the maximum comparison set nothing else in the space currently returns true to max < obj
-	def max(); @pointer = @space.length - 1;  	end
+	def max(); @pointer = space.length - 1;  	end
 
+	public
+	def fspace
+		@space
+	end
+	def space
+		@space[@splvl]
+	end
+	def pointer
+		@pointer
+	end
+	def splvl
+		@splvl
+	end
 	private
 	def _insert_obj(obj,dir)
-		case @pointer
+	
+		case pointer
 			when nil then @pointer = 0; _merge(obj)
 			when Fixnum # When we are pointing at a specific space insert or append based on direction (<,==,>)
 				case dir
-				 	when -1 then  @space.insert(@pointer+1,[obj]); @pointer = @pointer + 1 # we generated a new space after pointer
+				 	when -1 then  space.insert(@pointer+1,[obj]); @pointer = @pointer + 1 # we generated a new space after pointer
 					when 0  then  _merge(obj)			# Merge obj into space if obj exists merges the sets between obj and @pointer
-				 	when 1 	then  @space.insert(@pointer,[obj]) 	# We have generated a new set at @pointer 
+				 	when 1 	then  space.insert(@pointer,[obj]) 	# We have generated a new set at @pointer 
 				end
 			when :all   then _general_modifier(value)			# A general modifier to the space 
 			when Array  then _set_modifier(value)				# defines the action of a modifier on a set
@@ -98,20 +140,20 @@ class Tiles::Factories::ComparableFactory
 	end
 
 	def _merge(obj)
-		unless (index = @space.index { |a| !a.index(obj).nil? }).nil?
+		unless (index = space.index { |a| !a.index(obj).nil? }).nil?
 			# slices out the section between (and including) @pointer and index, flattens it and then replaces back at its old index
-			@space.insert(	(index<=@pointer) ? index : @pointer, 
-					@space.slice!({-1 => index..@pointer, 0 => index, 1 => @pointer..index}[index <=> @pointer]).flatten(1)
+			space.insert(	(index<=pointer) ? index : pointer, 
+					space.slice!({-1 => index..pointer, 0 => index, 1 => pointer..index}[index <=> pointer]).flatten(1)
 					)
 		else
-			@space[@pointer].push obj	# obj doesn't exist in the space so append it at the current positoin
+			space[pointer].push obj	# obj doesn't exist in the space so append it at the current positoin
 		end
 	end
 	private
 	class ComparisonSpace
 		def initialize(space)
 			@space = space
-			@hash = @space.each_index.inject({}) { |r,i| @space[i].each { |o| r[o] = i }; r }
+			@hash = @space[0].each_index.inject({}) { |r,i| @space[i].each { |o| r[o] = i }; r }
 		end
 		def compare(in1,in2)
 			@hash[in1] <=> @hash[in2] 

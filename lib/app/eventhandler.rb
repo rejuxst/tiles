@@ -92,7 +92,7 @@ class Tiles::Application::EventHandler_Delegated
 #############################################
 	def initialize(opts = {})
 		init_database	
-		add_variable 'timespace' opts[:time_space]
+		add_variable 'timespace', opts[:time_space]
 		add_variable 'last_frame'   , 		nil
 		add_reference_collection 'events', 		[] 
 		add_reference_collection 'frames', [
@@ -128,10 +128,10 @@ class Tiles::Application::EventHandler_Delegated
 	end
 ### var_readers
 	def next_keyframe
-		db_get('next_keyframe')
+		db_get 'next_keyframe'
 	end
 	def last_frame
-		db_get('last_frame')
+		db_get 'last_frame'
 	end
 ################
 
