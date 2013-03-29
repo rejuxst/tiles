@@ -27,7 +27,6 @@ def require_test_library
 	require 'test/unit'
 end
 begin
-	require_from_source
 	blkt = File.absolute_path(File.join(File.dirname(__FILE__),'/blocktest/'))
 	op = OptionParser.new do |opts|
 	  opts.banner = "Usage: test/test.rb [class_name(s)] [options]"
@@ -46,6 +45,7 @@ begin
 
 
 	  opts.on("-a", "--all", "Test all blocks") do |v|
+		require_from_source
 		require_test_library
 		Dir.open(blkt).entries.each do |e| 
 			begin
@@ -67,7 +67,8 @@ begin
 		exit
 	  end
 	  opts.on("-i","--interactive","Load the tiles library and drop into pry") do
-		binding.pry
+		require_from_source
+		pry
 		exit
 	  end
 	  opts.on("-r","--application","Run /testapp/main application") do
@@ -79,6 +80,7 @@ begin
 	end
 	(ARGV.empty?) ? puts(op.banner) : op.parse!
 	Kernel.puts "Testing on: #{RUBY_ENGINE}@#{RUBY_VERSION}"
+	require_from_source unless ARGV.empty?
 	ARGV.each do |block|
 		require_test_library
 		puts "Test::Unit::TestCase ===> #{block}"

@@ -49,6 +49,7 @@ class Tiles::Factories::TimeFactory < BasicObject
 		
 	end
 end
+
 class Tiles::Factories::ComparableFactory
 # Ex.
 # a = ((((Tiles::Factories::ComparableFactory.blank_factory(:name =>'::LingComp') < 
@@ -94,11 +95,11 @@ class Tiles::Factories::ComparableFactory
 		ml = kl.collect { |k| k.max_by {|i| i.length }.length }.max
 		isl = (0...ml).collect { |l| kl.collect { |k| [k[0][-l-1], k[1][-l-1]] }.flatten.uniq }
 		islh = {}; isl.flatten.each { |ent| islh[ent] = [nil,0] }
-		kl.reject {|k| @spacehash[k] != -1 }.each { |k| (0...ml).each { |l| islh[k[0][-l-1]] = [k[1][-l-1], -1]  if k[0][-l-1] != k[1][-l-1] }     }
+		kl.reject {|k| @spacehash[k] == :<=> }
+			.each { |k| (0...ml).each { |l| islh[k[0][-l-1]] = [k[1][-l-1], @spacehash[k]]  if k[0][-l-1] != k[1][-l-1] }     }
 		islh[nil] = 0
 		islh.each_pair  { |k,v| islh[k] = islh[v[0]] + v[1] if v.is_a?(Array) && islh[v[0]].is_a?(Fixnum) } while islh.values.any? {|v| v.is_a? Array }
-		@lvlhash = islh
-		self
+		Comparator.new islh,@instances,@sets
 	end
 	# Positive definite hash?
 	def coordinate_workers(wk1,wk2,dir)
@@ -147,7 +148,39 @@ class Tiles::Factories::ComparableFactory
 		def ===(obj);	@factory.coordinate_workers(self,obj,0); 	end
 		def <=>(obj); 	@factory.coordinate_workers(self,obj,:<=>);		end
 	end
+	class Comparator
+		def initialize(lhsh,inst,sets)
 
+			@hsh = lhsh
+			@sets = sets
+			@instances = inst
+		end
+
+		def compare(s1,s2)
+			s1 = (s1.is_a?(Array)) ? s1.reverse : [s1]
+			s2 = (s2.is_a?(Array)) ? s2.reverse : [s2]
+			(0...[s1.length,s2.length].max).each do |i|
+				mem1 = _get_closest_membership(s1[i])
+				mem2 = _get_closest_membership(s2[i])
+				case
+					when s1[i] == mem1 && s2[i] == mem2 	then 	v1 = s1[i]; v2 = s2[i];
+					when mem1 == mem2 			then 	v1 = s1[i]; v2 = s2[i]; 
+											return s1[i] <=> s2[i] if (s1[i] <=> s2[i]) != 0
+					when mem1.nil? || mem2.nil? 		then 	return nil
+					else 						v1 = mem1; v2 = mem2; 
+				end
+				val = @hsh[v1] <=> @hsh[v2]  
+				return val if val != 0
+			end
+			return 0
+		end
+		def entity?(item); _get_closest_membership(item).nil?; end
+
+		def _get_closest_membership(item)
+			return item if @instances.index(item) 
+			@sets.find_all { |s| item.is_a? s }.sort[0] # Should be closest ancestor
+		end
+	end
 	def _new_space
 		{:uplvl => nil, :objs => [], :<=> => [], :max_repeat => 0 }
 	end
