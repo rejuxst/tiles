@@ -193,6 +193,9 @@ class Database::Reference
 		def == (other)
 			super(other) || @var == other
 		end
+		def nil?
+			@var.nil?
+		end
 		def hash		#TODO: Figure out what happens if a Database key is set with a variable
 					#	Should it error/self.value/ or exist as a mutatable object? 
 					#	mutatable meaning => Variable.new(dbTnst,1); dbInst.add_to_db(0,var); var.set(2); puts dbInst[1] # ????
@@ -210,7 +213,7 @@ class Database::Reference
 			end
 		end
 		def self.valid_class?(var)
-			[NilClass,Numeric,String,Symbol].any? { |c| var.is_a? c}
+			[ComparableEntity, NilClass, Numeric, String, Symbol].any? { |c| var.is_a? c}
 		end
 	end
 end
