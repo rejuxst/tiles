@@ -136,6 +136,42 @@ class Tiles::Factories::ComparableFactory
 	def cspace
 		@space[@plvl]
 	end
+
+	class ComparableEntity
+		::Object::ComparableEntity = self # Make this a Globally Avalible Class
+		include ::Comparable
+
+		def self.===(other)
+			super(other) || other.class === self
+		end
+
+		def initialize(spc,entry)
+			@space = spc
+			@ent =  entry
+		end
+		def <=>(other)
+			other = other.value if other.is_a?(::Database::Reference::Variable)
+			@space.compare(self,other)
+		end
+		def to_a
+			@ent.to_a
+		end
+		def hash
+			@ent.hash
+		end
+		def ===(other)
+			(self <=> other) == 0 
+		end
+		def eql?(other)
+			self == other || ( (self <=> other) == 0 )
+		end
+		def to_s
+			"#<ComparableEntity: #{@ent.to_s}>"
+		end
+	end
+
+
+
 	private
 	class Worker #Construction worker
 		attr_reader :factory, :param
@@ -157,8 +193,8 @@ class Tiles::Factories::ComparableFactory
 		end
 
 		def compare(s1,s2)
-			s1 = (s1.is_a?(Array)) ? s1.reverse : [s1]
-			s2 = (s2.is_a?(Array)) ? s2.reverse : [s2]
+			s1 = (s1.is_a?(Array) || s1.is_a?(ComparableEntity) ) ? s1.to_a.reverse : [s1]
+			s2 = (s2.is_a?(Array) || s2.is_a?(ComparableEntity) ) ? s2.to_a.reverse : [s2]
 			(0...[s1.length,s2.length].max).each do |i|
 				mem1 = _get_closest_membership(s1[i])
 				mem2 = _get_closest_membership(s2[i])
@@ -174,8 +210,16 @@ class Tiles::Factories::ComparableFactory
 			end
 			return 0
 		end
-		def entity?(item); _get_closest_membership(item).nil?; end
-
+		def entity?(item); !_get_closest_membership(item).nil?; end
+		def create_entity(*args)
+			if args.length == 1 && args[0].is_a?(Array)
+				ComparableEntity.new self, args[0]
+			elsif args.length == 0
+				raise "Can't make entity without input" 
+			else
+				ComparableEntity.new self, args
+			end
+		end
 		def _get_closest_membership(item)
 			return item if @instances.index(item) 
 			@sets.find_all { |s| item.is_a? s }.sort[0] # Should be closest ancestor

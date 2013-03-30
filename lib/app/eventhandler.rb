@@ -15,72 +15,7 @@ class Tiles::Application::EventHandler #NOTE: Should I make EventHandler a "Dele
 	include Database::Data
 	include Database::Base
 	extend Database::Base
-
-	def initialize
-		init_database
-		add_reference_collection "repeating",  		[]
-		add_reference_collection "periodically_do",	[]
-		add_reference_collection "events"	,	[]
-		add_reference_collection "handlers"	,	[]
-		create_timeframe("now")
-	end
-	def initialize
-		@space = []
-		@eventkey = 0 
-	end
-	def enqueue(opts = {})
-		# :interval 	=> 	interval: 	last_occurance + interval = enqueue_event(event)
-		# :at 		=>	time  	:	enqueue_event(event,time)
-		# :before/:after/.... => blk... :	More verbose methodes of enqueueing
-		# :in_order	=>	blk	:	priority coding for set order
-		# :reference_as => 	name	:	how to dereference the event from the queue 
-		
-	end
-	# dequeue a subset of the event handlers for processing
-	def run(opts = {},&blk)
-		# :time_interval => interval
-		# :event	 => EventClass
-		# :empty	 => process all outstanding events (empty is defined as all events  
-	end
-	def queue
-	end
-	# Allows Scoping and generation of event handlers 
-	#	(primarly for implimenting reliable scoped/temporary 
-	#		event handlers and propagating them upstream)
-	def register(opts ={})
-		# :check_at => time (:now,:always,:last) 
-		# :interval => interval
-		# :reference_as =>	name
-		# :listener 	=> A party that wants to be aware of all executed events in the space
-		# :event_handler => A sub event handler that wants to feed into the execution loop of this event handler
-	end
-	
-	# Periodically preform the block based on options. Intended to initiate actions
-	# in ways that semantically dont make sense as an event or action.
-	#  i.e allowing all players to take a turn, there may not be a specific "event"
-	#	that would cause them to take a turn so there needs to be a way to make it happen.
-	def periodically(opts = {},&blk)
-		# :interval => Time
-		# :do	    => blk or blk_like object event
-		# :when     => true/false block, Time, Event
-		# event_class  => event_init hash	
-	end
-	private
-	def _run_now
-		@db.events.each {|e| e.preform }
-		@db.update_nowframe
-	end
-	def _proc_isa_time?
-		Proc.new { |ops| ops.is_a? Time }
-	end
-	def _register_eventhandler
-	end
-	def _register_listener
-	end
-end
-class Tiles::Application::EventHandler_Delegated
-	include Database::Data
-	include Database::Base
+	attr_reader :timespace
 ###### Overridding Database Definitions #####
 	def assign_key(obj)
 		super(obj)
@@ -92,39 +27,56 @@ class Tiles::Application::EventHandler_Delegated
 #############################################
 	def initialize(opts = {})
 		init_database	
-		add_variable 'timespace', opts[:time_space]
+		#add_variable 'timespace', 
+		@timespace = case opts[:timespace]
+			when Proc then Tiles::Factories::ComparableFactory.construct("#{self.class}:#{self.object_id}",&opts[:timespace])
+			else opts[:timespace]
+		end
 		add_variable 'last_frame'   , 		nil
 		add_reference_collection 'events', 		[] 
-		add_reference_collection 'frames', [
-				add_reference_set( opts[:start_at] || 0, [] )
-				]
-		add_variable 'next_keyframe', db_get.resolve().to_a.min{ |x,y| x <=> y}.value		
-		#opts[:start_at] || 0
-	end
-	def execute_frame()
-		if block_given?
-			yield self[db_get("next_keyframe")]
-		else
-			self[db_get("next_keyframe")].preform
-		end
-		db_get('last_frame').set db_get('next_keyframe').value
-		
+		st_at = timespace.create_entity(opts[:start_at] || 0)
+		add_reference_set( st_at, [] )
+		add_reference_collection 'frames', [ st_at ]
+		add_variable 'next_keyframe', st_at 
+		#db_get('frames').resolve().to_a.min{ |x,y| x <=> y}.value		
+
 	end
 
+	def db_get(key)
+		super(key) || super(timespace.create_entity(key)) 
+	rescue Exception => e 
+		unless timespace.nil?
+			super(timespace.create_entity(key)) 
+		else 
+			raise e
+		end
+	end
+
+	def execute_frame()
+		if block_given?
+			self[db_get("next_keyframe").value].each { |e| yield e }
+		else
+			self[db_get("next_keyframe").value].each { |e| e.preform }
+		end
+		db_get('last_frame').set db_get('next_keyframe').value
+		db_get('next_keyframe').set db_get('frames').reject { |f| f.key <= last_frame.value }.min_by {|f| f.key }
+	end
+	def run (opts = {})
+		while !next_keyframe.nil? && next_keyframe.value >= opts[:until]  
+			execute_frame() 
+		end
+	end
 	def move_keyframe(key)
 		db_get('next_keyframe').set key
 	end
 	def enqueue(opts = {})
 		event = opts[:event]
 		at = opts[:at] || event.time
-		raise ArgumentException if event.nil? || at.nil?
-		case  
-			when !(at_k = db_get(opts[:at])).nil? 			then _enqueue_to_frame(event,at_k)
-			when !timespace.nil? && timespace.entity?(opts[:at]) 	then _create_frame(opts[:at]) 
-		end 
-	rescue ArgumentException => e
+		raise ::ArgumentError if event.nil? || at.nil?
+		_enqueue_to_frame(event,at)
+	rescue ::ArgumentError => e
 		raise e, "Didn't provide sufficient and correct arguments to enqueue call.
-			  Also possible that the provided event didn't have a time function => #{opts}".delete("\n\t")
+			  Also possible that the provided event didn't have a time function => #{opts}".delete("\n\t"), e.backtrace
 	end
 ### var_readers
 	def next_keyframe
@@ -156,11 +108,15 @@ class Tiles::Application::EventHandler_Delegated
 	end
 	private
 	def _enqueue_to_frame(event,at)
+		raise "Invalid Key. Unable to enqueue at #{at} not defined in the given timespace." if !timespace.nil? && !timespace.entity?(at) 
 		add_to_db event
-		at.add event.key
+		(db_get(at) || _create_frame(at)).add event
 	end
 	def _create_frame(at)
-		db_get('frames').add add_reference_set timespace.to_e(at,self), []
+		db_get('frames').add add_reference_set timespace.create_entity(at), []
+		move_keyframe(timespace.create_entity(at)) if next_keyframe.nil? || (timespace.create_entity(at) < next_keyframe.value)
+		binding.pry
+		db_get(at)
 	end
 	
 end
