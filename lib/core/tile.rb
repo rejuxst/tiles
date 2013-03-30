@@ -3,7 +3,7 @@ class Tile < ::Tiles::BasicObject
 	include Generic::Responsive
 	attr_reader :ASCII #this should only be read as the data should be stored in database
 	def init(*args)
-		unless args.nil?
+		unless args.nil? || args.empty?
 			@ASCII = '0'
 			@ASCII = args[0][:ASCII] if !args[0][:ASCII].nil?
 			@things = []

@@ -47,20 +47,31 @@ module Database
 #####################################
 configuration_method :add_database_entry_class, :set_assign_key
 ### General Setup ##################
-default_configuration_call(:add_database_entry_class,
-		Class) { |ky|  @db[ky].nil?() ? nil : @db[ky].resolve }
-default_configuration_call(:add_database_entry_class,
-		Fixnum) { |ky| @db[ky] }
-default_configuration_call(:add_database_entry_class,
-		String) do |ky| 
+default_configuration_call(:add_database_entry_class,Class) { |ky|  @db[ky].nil?() ? nil : @db[ky].resolve }
+
+default_configuration_call(:add_database_entry_class,Fixnum) { |ky| @db[ky] }
+
+default_configuration_call(:add_database_entry_class,ComparableEntity) { |ky| @db[ky] }
+
+default_configuration_call(:add_database_entry_class,String) do |ky| 
 	temp = @db[ky]
 	(temp.is_a?(Reference)) ? temp.resolve : temp
 end
+
+default_configuration_call(:add_database_entry_class,Symbol) do |ky| 
+	temp = @db[ky]
+	(temp.is_a?(Reference)) ? temp.resolve : temp
+end
+
+
 default_configuration_call(:set_assign_key) do 
 	@max_key = 0 if @max_key.nil?
 	@max_key = @max_key + 1
 end
 end
+
+
+
 module Database::Data
 ### Database Variables   ###########
   attr_reader :db_parent # The owner of this Database object, if nil this is the Master Database 
@@ -109,6 +120,10 @@ module Database::Data
 		false
 	end
 end
+
+
+
+
 module Database::Base
 ##################################### 
   # The storage array for the database
@@ -136,7 +151,7 @@ module Database::Base
 	else
 		db[the_key] = input
 	end
-	input.set_key(the_key,self) if input.is_data?#Database.is_database?(input)
+	input.set_key(the_key,self) if input.is_data?
 	return the_key
   end
   def remove_from_db(input)      # Should never be called by designer (use only for moving)
@@ -170,18 +185,12 @@ module Database::Base
 # Reference control functions
 # Add Reference to an object
 def add_reference(key,target,opts = {} ,&blk)
-	unless key.class <= String && key.to_i.to_s != key
-		raise "Invalid key type. Key for Reference should be of type String, key is a #{key.class}" 
-	end
 	add_reference_set(key,target,opts) if target.is_a? Array
 	add_to_db(target,:if_in_use => opts[:add_then_reference]) if opts[:add_then_reference]
 	add_to_db Database::Reference.new(self,target,:proc => blk) , key, :if_in_use => opts[:if_in_use]
 end
 # A reference is added as a chain of object keys. it is stored as chain of keys starting from any database 
 def add_reference_chain(key,chain,opts = {},&blk)
-	unless key.class <= String && key.to_i.to_s != key
-		raise "Invalid key type. Key for Reference should be of type String, key is a #{key.class}" 
-	end
 	add_to_db Database::Reference::Chain.new(self,chain, :proc => blk) , key, :if_in_use => opts[:if_in_use] 
 end
 def add_reference_collection(key,target,opts = {},&blk)
@@ -189,16 +198,10 @@ def add_reference_collection(key,target,opts = {},&blk)
 	add_to_db Database::Reference::Collection.new(self,target,:proc => blk) , key, :if_in_use => opts[:if_in_use]
 end
 def add_reference_set(key,target,opts = {})
-	unless key.class <= String && key.to_i.to_s != key
-		raise "Invalid key type. Key for Reference should be of type String, key is a #{key.class}" 
-	end
 	target.each { |t| add_to_db(t,:if_in_use => opts[:add_then_reference]) }  if opts[:add_then_reference]
 	add_to_db Database::Reference::Set.new(self,target) , key, :if_in_use => opts[:if_in_use]
 end
 def add_variable(key,target,opts = {})
-	unless (key.class <= String && key.to_i.to_s != key) || key.nil?
-		raise "Invalid key type. Key for Reference should be of type String, key is a #{key.class}" 
-	end
 	r = add_to_db Database::Reference::Variable.new(self,target) , key 
 	case opts[:return]
 		when :variable,"variable" then self[key]
