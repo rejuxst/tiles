@@ -11,10 +11,7 @@ class Game < ::Tiles::BasicObject
 	end
 	def run_once
 		# players take their turn
-		players.each { |p| p.take_turn if p.turn == turn}
 		process_events
-		actors_take_turns	# all uncontrolled actors take their turn
-		turn.value= turn + 1
 		status()
 	end
 	def status

@@ -27,7 +27,6 @@ class Tiles::Application::EventHandler #NOTE: Should I make EventHandler a "Dele
 #############################################
 	def initialize(opts = {})
 		init_database	
-		#add_variable 'timespace', 
 		@timespace = case opts[:timespace]
 			when Proc then Tiles::Factories::ComparableFactory.construct("#{self.class}:#{self.object_id}",&opts[:timespace])
 			else opts[:timespace]
@@ -38,7 +37,7 @@ class Tiles::Application::EventHandler #NOTE: Should I make EventHandler a "Dele
 		add_reference_set( st_at, [] )
 		add_reference_collection 'frames', [ st_at ]
 		add_variable 'next_keyframe', st_at 
-		#db_get('frames').resolve().to_a.min{ |x,y| x <=> y}.value		
+		add_reference_set( 'listeners', [] )
 
 	end
 
@@ -51,8 +50,9 @@ class Tiles::Application::EventHandler #NOTE: Should I make EventHandler a "Dele
 			raise e
 		end
 	end
-
+	
 	def execute_frame()
+		inform_listeners(next_keyframe)
 		if block_given?
 			self[db_get("next_keyframe").value].each { |e| yield e }
 		else
@@ -61,14 +61,17 @@ class Tiles::Application::EventHandler #NOTE: Should I make EventHandler a "Dele
 		db_get('last_frame').set db_get('next_keyframe').value
 		db_get('next_keyframe').set db_get('frames').reject { |f| f.key <= last_frame.value }.min_by {|f| f.key }
 	end
+
 	def run (opts = {})
 		while !next_keyframe.nil? && next_keyframe.value >= opts[:until]  
 			execute_frame() 
 		end
 	end
+
 	def move_keyframe(key)
 		db_get('next_keyframe').set key
 	end
+
 	def enqueue(opts = {})
 		event = opts[:event]
 		at = opts[:at] || event.time
@@ -78,6 +81,9 @@ class Tiles::Application::EventHandler #NOTE: Should I make EventHandler a "Dele
 		raise e, "Didn't provide sufficient and correct arguments to enqueue call.
 			  Also possible that the provided event didn't have a time function => #{opts}".delete("\n\t"), e.backtrace
 	end
+
+
+
 ### var_readers
 	def next_keyframe
 		db_get 'next_keyframe'
@@ -87,25 +93,45 @@ class Tiles::Application::EventHandler #NOTE: Should I make EventHandler a "Dele
 	end
 ################
 
+	def register_listener(listener)
+		raise "Object Cant listen doesn't reaspond to inform" unless listener.respond_to? :inform
+		listeners.add listener
+	end
+
+
 
 	def create_timeframe(id,opts = {})
 		add_reference_collection id, [],opts
 		self[id].blank_set(:events)
 		self[id]
 	end
+
 	def empty?
 		self["events"].to_a.empty?
 	end
+
 	def update_nowframe
 		now[:events].each { |e| e.destroy_self if e.respond_to? :destroy_self}
 		if now[:next].is_a?( ::Database::Reference ) 
 			add_to_db now[:next],"now"
 		elsif now[:next].is_a?( NilClass ) 	
+		_inform_listeners(self,frame_id)
 			create_timeframe "now",   		:if_in_use => :destroy_entry
 		else	
 			add_reference_chain "now", now[:next],  :if_in_use => :destroy_entry
 		end	
 	end
+
+	def inform(source_handler,frame_id)	
+		frames.each do |frame|
+			next if frame.key > frame_id || frame.key < last_frame.value
+			_inform_listeners(self,frame.key)
+			frame.each { |eve| eve.remove_self_from_db; enqueue(:event => eve, :at => frame_id) } 
+		end
+		last_frame.set frame_id
+	end	
+
+
 	private
 	def _enqueue_to_frame(event,at)
 		raise "Invalid Key. Unable to enqueue at #{at} not defined in the given timespace." if !timespace.nil? && !timespace.entity?(at) 
@@ -118,7 +144,9 @@ class Tiles::Application::EventHandler #NOTE: Should I make EventHandler a "Dele
 		binding.pry
 		db_get(at)
 	end
-	
+	def _inform_listeners(frame_id)
+		listeners.each { |list| list.inform(self,frame_id) }
+	end
 end
 ## ???? Should this exist ???? ###
 class Tiles::Application::SetHandler

@@ -3,6 +3,7 @@ class Tiles::Factories < Tiles::ClassSpace
 	
 end
 class Tiles::Time
+
 end
 # Functional Space for generation time classes
 class Tiles::Factories::TimeFactory < BasicObject
