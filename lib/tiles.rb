@@ -1,10 +1,14 @@
 module Tiles
 end
-%w[ app/application.rb app/config.rb app/launcher.rb app/security app/objectspace app/factories 
-].each { |r| require r }
-%w[
+%w[ 
+app/application.rb 
+app/config.rb 
+app/launcher.rb 
+app/security.rb 
+app/objectspace.rb
 modules/database.rb
 core/reference.rb
+app/factories.rb
 modules/generic.rb
 modules/responsive.rb
 modules/active.rb
@@ -24,8 +28,6 @@ core/map.rb
 core/property.rb
 core/script.rb
 core/tile.rb
-].each { |r| require r }
-%w[
 lang/language.rb
 lang/linguistics.rb
 lang/dictionary.rb

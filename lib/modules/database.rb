@@ -32,6 +32,10 @@ module Database
 	@database_entry_types = {} if @database_entry_types.nil? 
 	@database_entry_types[the_class] = blk  
   end
+  def self.set_database_missing_entry_class(&blk)
+	@database_entry_types = {} if @database_entry_types.nil? 
+	@database_entry_types[:default] = blk  
+  end
   def self.set_assign_key(&blk)
 	@assign_key = blk
   end
@@ -42,16 +46,19 @@ module Database
 	@database_entry_types.any?{|key,val| key == the_class}
   end
   def self.[](the_class)
-	return @database_entry_types[the_class] rescue nil
+	return @database_entry_types[the_class] ||@database_entry_types[:default] rescue nil
   end
 #####################################
-configuration_method :add_database_entry_class, :set_assign_key
+configuration_method :add_database_entry_class, :set_assign_key, :set_database_missing_entry_class
 ### General Setup ##################
+default_configuration_call(:set_database_missing_entry_class) do |ky|
+	temp = @db[ky]
+	(temp.is_a?(Reference)) ? temp.resolve : temp
+end
+
 default_configuration_call(:add_database_entry_class,Class) { |ky|  @db[ky].nil?() ? nil : @db[ky].resolve }
 
 default_configuration_call(:add_database_entry_class,Fixnum) { |ky| @db[ky] }
-
-default_configuration_call(:add_database_entry_class,ComparableEntity) { |ky| @db[ky] }
 
 default_configuration_call(:add_database_entry_class,String) do |ky| 
 	temp = @db[ky]

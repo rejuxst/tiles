@@ -1,6 +1,7 @@
 require 'pry'
 # TODO: Set should probably become a database itself because there is a clear need for 
-#	References to be blank (with a key). For Example lets say the game wants a list of all
+#	References to be blank (with a key, i.e the reference exists but is blank nil/otherwise).
+#	For Example lets say the game wants a list of all
 #	objects 'controlled' by all the players there would need to be a bunch of references 
 #	that the game doesn't need to know about but have to exist to maintain connectivity
 #	or to allow calling all_controlled_creatures without throwing an error.
@@ -22,7 +23,6 @@ class Database::Reference
 	def initialize(source,target,opts = {}, &blk)
                 # Input validation checks
 		raise "Source location is not a Database Reference cannot be generated" if !source.is_database?
-#		raise "Target location is not a Database Try making a local reference" if !Database.is_database?(target)
                 @source = source
 		@target = target
 		@blk    = opts[:proc] || blk
@@ -41,9 +41,11 @@ class Database::Reference
 			target_chain = [target_chain] if not target_chain.is_a? Array
 			@source = source
 			@target_chain = target_chain
-			unless @target_chain.all? {|element| Database.is_database_entry_class?(element.class)}
-				raise "Invalid Reference::Chain element in chain #{@target_chain}"
-			end
+#			NOTE: 	Since we have a default for resolving keys that are not explicitly included
+#				in the database key list we no longer need this check
+#			unless @target_chain.all? {|element| Database.is_database_entry_class?(element.class)}
+#				raise "Invalid Reference::Chain element in chain #{@target_chain}"
+#			end
 		end
 		def resolve
 			local_varible = [@source]
@@ -134,7 +136,7 @@ class Database::Reference
 		end
 		private 
 		def empty_key
-			i = 0;  (i  += 1) while hash.has_key? i
+			i = 0;  (i  += 1) while hash.has_key? [i]
 			i
 		end
 		def hash
@@ -153,7 +155,7 @@ class Database::Reference
 			end
 			super
 		rescue
-			raise "Can't add an object to a collection that isn't a ::Database::Reference, 
+			raise "Can't add an object ( #{item} ) to a collection that isn't a ::Database::Reference, 
 				a valid key chain, or a database element owned by the source => #{@source}".delete("\n\t")
 		end
 		def index(*ind)	
