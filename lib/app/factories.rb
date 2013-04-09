@@ -223,6 +223,7 @@ class Tiles::Factories::ComparableFactory
 			end
 		end
 		def _get_closest_membership(item)
+			item = item.value if item.is_a? ::Database::Reference::Variable
 			return item if @instances.index(item) 
 			@sets.find_all { |s| item.is_a? s }.sort[0] # Should be closest ancestor
 		end
