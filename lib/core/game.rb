@@ -9,7 +9,8 @@ class Game < ::Tiles::BasicObject
 		add_reference		"eventhandler",	Tiles::Application::EventHandler.new(
 						:timespace => Proc.new { |f| f[Fixnum] <=> f[Fixnum] },
 						:start_at  => 0
-					)
+						), 
+					:add_then_reference => :destroy_entry,:if_in_use => :destroy_entry
 	end
 	def start
 	end

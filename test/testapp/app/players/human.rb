@@ -15,8 +15,8 @@ class SuperHuman_DEBUG < Human
 			nil until (event = request_inbound_package).match /[wasd]/
 			case event
 				when 'w' then  Proc.new { Move.down(controls["character"])  } 
-				when 'd' then  Proc.new { Move.left(controls["character"])  }
-				when 'a' then  Proc.new { Move.right(controls["character"]) } 
+				when 'd' then  Proc.new { Move.right(controls["character"])  }
+				when 'a' then  Proc.new { Move.left(controls["character"]) } 
 				when 's' then  Proc.new { Move.up(controls["character"])    } 
 				when 't' then  :empty 
 			end

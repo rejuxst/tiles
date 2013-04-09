@@ -40,18 +40,18 @@ class Generic::Responsive::Database
 	def initialize
 		init_database
 	end
-	def [](*ind)
-		a = super(*ind)
-		if a.nil? || !a.is_a?(::Database::Reference)
-			a
-		else  
-			a.resolve
-		end
-	end
+#	def [](*ind)
+#		a = super(*ind)
+#		if a.nil? || !a.is_a?(::Database::Reference)
+#			a
+#		else  
+#			a.resolve
+#		end
+#	end
 	def add_response(to,type,response)
 		to = to.to_s.downcase
 		type = type.to_s.downcase
-		add_reference_set(to.to_s,[]) if  db_get(to).nil? 
+		add_reference_collection(to,[]) if  db_get(to).nil? 
 		db_get(to)[type]= ::Generic::Responsive::Response.new self,response	
 	end
 end

@@ -1,55 +1,51 @@
 class Action < Event
+
+	# Action Configuration 
+	extend ::Tiles::Configurable
+
+	def self.add_action_category(*args)
+		#raise "Entry is not an acceptable Database recordable entity" if 
+		@action_categories = (@action_categories || []) + args 
+	end
+	def self.categories
+		@action_categories || []
+	end
+
+	configuration_method :add_action_category
+
+	default_configuration_call(:add_action_category,
+			'on','actor','target','with','using','via')
+	#################
+	add_initialize_loop do |*args| 
+		add_reference_set 'effects', [] , :add_then_reference => true
+		Action.categories.each { |cat| add_reference cat, nil } 
+	end
 	def init(args = {})
 		args = args[0] if args.is_a? Array
-		@effects = []
-		from(args[:actor])
-		on(args[:target])
-		with(args[:with])
-		using(args[:using])
-		via(args[:path])
-		super
-	end
-	def via path
-		@path = []
-		if path.is_a? Array
-			@path = path 
-		else
-			@path << path
+		(args || {}).each_pair do |key,val| 
+			add_reference 	  key,val,:if_in_use => :destroy_entry unless 	val.is_a? Array
+			add_reference_set key,val,:if_in_use => :destroy_entry if 	val.is_a? Array	
 		end
-		return self
-	end
-	def from(actor = nil)
-		return self["actor"] if actor.nil?
-		add_reference("actor",actor)
-		return self
-	end
-	def with(with = nil)
-		return self["with"] if with.nil?	
-		add_reference("with",with)
-		return self
-	end
-	def using(use = nil)
-		return self["using"] if use.nil?
-		add_reference("use",use)
-		return self
-	end
-	def on(target = nil)
-		return self["target"] if target.nil?
-		add_reference("target",target)
-		return self
 	end
 	def preform
 		preform_pre_callback
-		add_response(using.response(self,:using)) 		  unless using.nil?
-		@path.each{ |t| add_response(t.response(self,:via))	} unless @path.nil?
-		add_response(on.response(self,:target)) 		  unless on.nil?
-		add_response(with.response(self,:with)) 		  unless with.nil?
+		Action.categories.each do |cat|
+			entry = self[cat]
+			next if entry.nil?
+			if entry.is_a?( ::Database::Reference::Set)
+				entry.each { |t| add_response(t.response(self,cat)) }	
+			else
+				add_response(entry.response(self,cat))			
+			end
+		end
+		effects.each { |effect| effect.resolve(self) }
 		calculate 
-		@effects.each { |effect| effect.resolve(self) }
 	rescue ActionRevaluate => action
 		return action.preform
 	rescue ActionCancel
-		return nil
+		return nil #TODO: BIG issue here. If an action is canceled the eventhandler
+			   # 	  isn't told. As a result an actor's turn counter can become 
+			   #	  desynced as everyone else is taking turns and not the actor
 	end
 	def calculate
 	
@@ -58,15 +54,15 @@ class Action < Event
 	end
 	def add_response(response)
 		case response
-		when Array 	then	response.flatten.each { |r| add_response r }
-		when Effect	then	@effects << Effect.new(response.to_s)
-		when String	then 	@effects << Effect.new(response.to_s)
-		when Proc 	then 	out = r.call(self)
-		when :none
-		when :cancel	then raise ActionCancel, "One of the components of the Action canceled it"
-		when :retry
-		when nil 	then	return nil
-		else		
+			when Array 	then	response.flatten.each { |r| add_response r }
+			when Effect	then	effects << Effect.new(response.to_s)
+			when String	then 	effects << Effect.new(response.to_s)
+			when Proc 	then 	effects << BlockEffect.new(response)
+			when :none
+			when :cancel	then	raise ActionCancel, "One of the components of the Action canceled it"
+			when :retry
+			when nil 	then	return nil
+			else		
 		end
 	end
 	class ActionCancel < StandardError

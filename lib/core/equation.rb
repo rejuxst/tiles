@@ -25,7 +25,7 @@ module MathEquation
 	end
 	class Operation < Treetop::Runtime::SyntaxNode
 		def value(src = nil)
-			other_terms.elements.inject(start.value) do |res,ele| 
+			other_terms.elements.inject(start.value(src)) do |res,ele| 
 				res.send(ele.operator.text_value,ele.term.value(src)) 
 			end
 		end
@@ -63,9 +63,11 @@ module MathEquation
 			end
 	end
 end
-class Equation
+class Equation 
+	include ::Database::Data
 	@@parser = MathEquationParser.new
 	def initialize(string)
+		init_data
 		@equation = @@parser.parse(string)
 	end
 	def source=(src)
@@ -92,6 +94,14 @@ end
 class Effect < Equation
 	def resolve(src)
 		self.source = src
-		super()
+		super
 	end
 end
+class BlockEffect < Effect
+	def initialize(blk)
+		@blk = blk
+	end
+	def resolve(src)
+		@blk.call(src)
+	end
+end 

@@ -192,7 +192,6 @@ module Database::Base
 # Reference control functions
 # Add Reference to an object
 def add_reference(key,target,opts = {} ,&blk)
-	binding.pry if key.nil? || key.is_a?(Hash)
 	add_reference_set(key,target,opts) if target.is_a? Array
 	add_to_db(target,nil,:if_in_use => opts[:add_then_reference]) if opts[:add_then_reference]
 	add_to_db Database::Reference.new(self,target,:proc => blk) , key, :if_in_use => opts[:if_in_use]

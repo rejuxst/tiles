@@ -1,5 +1,5 @@
 class Character < Actor
-	add_properties :hp	
+	add_properties :hp
 end
 class Hp < Property
 	requires_value "max_hp", Fixnum
