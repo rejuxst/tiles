@@ -71,6 +71,9 @@ class Tiles::Factories::ComparableFactory
 	def self.[](name)
 		@@space_list[name.to_s]
 	end
+	def self.blank_space()
+		BlankComparator.new nil,nil,nil
+	end
 	private
 	def self.register_space(name,space,make_global = false)
 		@@space_list[name.to_s] = space
@@ -138,7 +141,7 @@ class Tiles::Factories::ComparableFactory
 		@space[@plvl]
 	end
 
-	class ComparableEntity
+	class ComparableEntity < ::Database::Reference::Variable
 		::Object::ComparableEntity = self # Make this a Globally Avalible Class
 		include ::Comparable
 
@@ -148,17 +151,14 @@ class Tiles::Factories::ComparableFactory
 
 		def initialize(spc,entry)
 			@space = spc
-			@ent =  entry
+			@var =  entry
 		end
 		def <=>(other)
 			other = other.value if other.is_a?(::Database::Reference::Variable)
 			@space.compare(self,other)
 		end
 		def to_a
-			@ent.to_a
-		end
-		def hash
-			@ent.hash
+			@var.to_a
 		end
 		def ===(other)
 			(self <=> other) == 0 
@@ -167,7 +167,7 @@ class Tiles::Factories::ComparableFactory
 			self == other || ( (self <=> other) == 0 )
 		end
 		def to_s
-			"#<ComparableEntity: #{@ent.to_s}>"
+			"#<ComparableEntity: #{@var.to_s}>"
 		end
 	end
 
@@ -187,7 +187,6 @@ class Tiles::Factories::ComparableFactory
 	end
 	class Comparator
 		def initialize(lhsh,inst,sets)
-
 			@hsh = lhsh
 			@sets = sets
 			@instances = inst
@@ -215,6 +214,8 @@ class Tiles::Factories::ComparableFactory
 		def create_entity(*args)
 			if args.length == 1 && args[0].is_a?(Array)
 				ComparableEntity.new self, args[0]
+			elsif args.length == 1 && args[0].is_a?(ComparableEntity)
+				ComparableEntity.new self, args[0].value
 			elsif args.length == 0
 				raise "Can't make entity without input" 
 			else
@@ -225,6 +226,15 @@ class Tiles::Factories::ComparableFactory
 			return item if @instances.index(item) 
 			@sets.find_all { |s| item.is_a? s }.sort[0] # Should be closest ancestor
 		end
+	end
+	class BlankComparator < Comparator
+		def compare(s1,s2)
+			s1 = (s1.is_a?(Array) || s1.is_a?(ComparableEntity) ) ? s1.to_a : [s1]
+			s2 = (s2.is_a?(Array) || s2.is_a?(ComparableEntity) ) ? s2.to_a : [s2]
+			s1 <=> s2
+		end
+		def entity?(item); true; end
+		
 	end
 	def _new_space
 		{:uplvl => nil, :objs => [], :<=> => [], :max_repeat => 0 }

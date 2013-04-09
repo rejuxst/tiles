@@ -1,9 +1,24 @@
+# Tiles::Application class:
+# - Container for an executable tiles instance
+# - Only object that can own (be the parent of) a object without being part of the tiles Database system
+# - Contains:
+# 	-- The Main Object (Generally a game possibly a UI or Something if the game hasn't been generated)
+#	-- The Application Event Handler: Any Application level events
+#	-- List of Views: Accessors to the remote/local views for rendering purposes
+#	-- List of Channels: Usually associated with the views 
+# -
+
+
 class Tiles::Application
+	# Secure the Application class
 	private :method
 	private :send 
 	private	:singleton_class
 	private :singleton_method_removed
 	private	:singleton_method_added
+	#################################
+
+
 	def initialize(opts = {},&blk)
 		opts[:valid_channels].each { |ch| register_new_channel_class ch } if (opts[:valid_channels] || "").is_a? Array
 		@game = opts[:game]
@@ -12,10 +27,13 @@ class Tiles::Application
 				Tiles::Application::Configuration.use_default_configuration 
 		freeze_channel_list
 	end
+
 	def run
+		# Setup
 		game.start
 		views.each { |v| v.setup }
 		views.each { |v| v.render }
+		# Execution loop
 		while 1
 			status = game.run_once
 			break unless status

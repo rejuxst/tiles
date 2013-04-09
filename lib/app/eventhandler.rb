@@ -12,10 +12,15 @@ class Tiles::Application::EventHandler #NOTE: Should I make EventHandler a "Dele
 #	now()	=> executed as the current queue head set. Priority within the set is resolved to include now()
 #	after(blk) => a priority blk
 #	before(blk) => a priority blk
+
+
+
+
 	include Database::Data
 	include Database::Base
 	extend Database::Base
-	attr_reader :timespace
+# TODO: NEED TO ADD FRAME_STACK CONSTRUCTOR AND TIMESPACE DB_DUMP() AND CONSTRUCTOR
+
 ###### Overridding Database Definitions #####
 	def assign_key(obj)
 		super(obj)
@@ -25,51 +30,62 @@ class Tiles::Application::EventHandler #NOTE: Should I make EventHandler a "Dele
 		end
 	end
 #############################################
+
+
+
+### var_readers
+	attr_reader :timespace, :frame_stack
+	def next_keyframe
+		timespace.create_entity(@frame_stack[0].key) unless @frame_stack.empty?
+	end
+	def next_frame
+		@frame_stack[0]
+	end
+	def last_frame
+		db_get 'last_frame'
+	end
+################
+
+
+
+
+
 	def initialize(opts = {})
 		init_database	
 		@timespace = case opts[:timespace]
 			when Proc then Tiles::Factories::ComparableFactory.construct("#{self.class}:#{self.object_id}",&opts[:timespace])
+			when nil  then Tiles::Factories::ComparableFactory.blank_space
 			else opts[:timespace]
 		end
-		add_variable 'last_frame'   , 		nil
-		add_reference_collection 'events', 		[] 
-		st_at = timespace.create_entity(opts[:start_at] || 0)
-		add_reference_set( st_at, [] )
-		add_reference_collection 'frames', [ st_at ]
-		add_variable 'next_keyframe', st_at 
-		add_reference_set( 'listeners', [] )
+		@frame_stack = []	
+		add_variable 	  'last_frame', nil
+		add_reference_set 'events', [] 
+		add_reference_set 'frames', []
+		add_reference_set 'listeners', [] 
 
-	end
-
-	def db_get(key)
-		super(key) || super(timespace.create_entity(key)) 
-	rescue Exception => e 
-		unless timespace.nil?
-			super(timespace.create_entity(key)) 
-		else 
-			raise e
+		if !opts[:start_at].nil?
+			st_at = timespace.create_entity(opts[:start_at])
+			_create_frame(st_at)
 		end
+
 	end
 	
 	def execute_frame()
-		inform_listeners(next_keyframe)
+		about_to_exec = next_keyframe
+		return if about_to_exec.nil?
+		_inform_listeners(next_keyframe)
 		if block_given?
-			self[db_get("next_keyframe").value].each { |e| yield e }
+			@frame_stack.shift.events.each { |e| yield e }
 		else
-			self[db_get("next_keyframe").value].each { |e| e.preform }
+			@frame_stack.shift.events.each { |e| e.preform }
 		end
-		db_get('last_frame').set db_get('next_keyframe').value
-		db_get('next_keyframe').set db_get('frames').reject { |f| f.key <= last_frame.value }.min_by {|f| f.key }
+		db_get('last_frame').set about_to_exec
 	end
 
 	def run (opts = {})
-		while !next_keyframe.nil? && next_keyframe.value >= opts[:until]  
+		while !next_keyframe.nil? && next_keyframe <= opts[:until]  
 			execute_frame() 
 		end
-	end
-
-	def move_keyframe(key)
-		db_get('next_keyframe').set key
 	end
 
 	def enqueue(opts = {})
@@ -83,50 +99,20 @@ class Tiles::Application::EventHandler #NOTE: Should I make EventHandler a "Dele
 	end
 
 
-
-### var_readers
-	def next_keyframe
-		db_get 'next_keyframe'
-	end
-	def last_frame
-		db_get 'last_frame'
-	end
-################
-
 	def register_listener(listener)
 		raise "Object Cant listen doesn't reaspond to inform" unless listener.respond_to? :inform
 		listeners.add listener
-	end
-
-
-
-	def create_timeframe(id,opts = {})
-		add_reference_collection id, [],opts
-		self[id].blank_set(:events)
-		self[id]
 	end
 
 	def empty?
 		self["events"].to_a.empty?
 	end
 
-	def update_nowframe
-		now[:events].each { |e| e.destroy_self if e.respond_to? :destroy_self}
-		if now[:next].is_a?( ::Database::Reference ) 
-			add_to_db now[:next],"now"
-		elsif now[:next].is_a?( NilClass ) 	
-		_inform_listeners(self,frame_id)
-			create_timeframe "now",   		:if_in_use => :destroy_entry
-		else	
-			add_reference_chain "now", now[:next],  :if_in_use => :destroy_entry
-		end	
-	end
-
 	def inform(source_handler,frame_id)	
 		frames.each do |frame|
 			next if frame.key > frame_id || frame.key < last_frame.value
 			_inform_listeners(self,frame.key)
-			frame.each { |eve| eve.remove_self_from_db; enqueue(:event => eve, :at => frame_id) } 
+			frame.events.each { |eve| eve.remove_self_from_db; enqueue(:event => eve, :at => frame_id) } 
 		end
 		last_frame.set frame_id
 	end	
@@ -135,20 +121,38 @@ class Tiles::Application::EventHandler #NOTE: Should I make EventHandler a "Dele
 	private
 	def _enqueue_to_frame(event,at)
 		raise "Invalid Key. Unable to enqueue at #{at} not defined in the given timespace." if !timespace.nil? && !timespace.entity?(at) 
+		at = timespace.create_entity(at)
 		add_to_db event
-		(db_get(at) || _create_frame(at)).add event
+		events.add event
+		(db_get(at) || _create_frame(at)).events.add event
 	end
 	def _create_frame(at)
-		db_get('frames').add add_reference_set timespace.create_entity(at), []
-		move_keyframe(timespace.create_entity(at)) if next_keyframe.nil? || (timespace.create_entity(at) < next_keyframe.value)
-		binding.pry
+		frame = Frame.new
+		add_to_db(frame, timespace.create_entity(at).value)
+		db_get('frames').add frame 
+		for i in (0...@frame_stack.length).to_a	
+			@frame_stack.insert(i,frame) and break if at <= @frame_stack[i].key 
+		end unless @frame_stack.empty?
+		@frame_stack.push frame if @frame_stack.empty? || at > @frame_stack.last.key
 		db_get(at)
 	end
 	def _inform_listeners(frame_id)
 		listeners.each { |list| list.inform(self,frame_id) }
 	end
+
 end
-## ???? Should this exist ???? ###
-class Tiles::Application::SetHandler
-	## ?????? Maybe this should be more like Tiles::ScopedObjectSpace ???????
+class Frame 
+	include Database::Data
+	include Database::Base
+	extend Database::Base
+	def initialize()
+		init_database
+		add_reference_set 'events', []
+	end
+	def events
+		db_get('events')
+	end
+	def add(item,opts = {})
+		events.add(item,opts)
+	end
 end
