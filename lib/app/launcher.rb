@@ -43,11 +43,10 @@ class << self
 	def setup		
 		@configuration= Tiles::Application::Configuration.last_config || 
 				Tiles::Application::Configuration.use_default_configuration 
-		@hello = 'hello'
 		load_application_from @opts[:app_dir]
 		@input_blk = Proc.new {} if @input_blk.nil?
 		game = ::Tiles::Application::ObjectSpace.lookup_class(@game_string.to_s.capitalize) 
-		#TODO:This is a HUGE security flaw fix it
+		#TODO: This is a HUGE security flaw fix it
 		raise "#{game} is not a Tiles::Game" unless game <= Game
 		@game = game.new
 		@application = Tiles::Application.new( 
@@ -112,6 +111,7 @@ Failed to load file correctly #{File.join(ent.to_path,f.partition('.')[0])} :
 	end
 	def enter_debug_mode
 		if @game.nil?
+			puts "No application instance loaded into launcher (self)"
 			binding.pry
 		else
 			@application.pry

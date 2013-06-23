@@ -54,7 +54,7 @@ class Tiles::Application
 	end
 	def register_channel_to(channel,ui)
 		raise "Input UI is not a UI it is a #{ui.class}" unless ui.is_a? UI
-		raise "Input Channel is not a Chanenl it is a #{channel.class}" unless channel.is_a? Channel
+		raise "Input Channel is not a Channel it is a #{channel.class}" unless channel.is_a? Channel
 		if valid_channels.has_key? channel.class.name.downcase
 			channel.inbound_package= ui.method(:inbound_package)
 			ui.request_inbound_package= Tiles::Application::Security.destructive_secure_method(

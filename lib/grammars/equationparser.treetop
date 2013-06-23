@@ -10,8 +10,8 @@ grammar MathEquation
 	end
 	rule primary
 		' '* '(' ' '* additive ' '* ')' ' '* {
-			def value
-				additive.value
+			def value(src = nil)
+				additive.value(src)
 			end
 			def source
 				parent.source
