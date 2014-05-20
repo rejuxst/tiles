@@ -1,8 +1,7 @@
 #TODO: Deal with issues regarding class inheritance 
 module Generic
 	module Base
-	#generic contains methods global to all instanciated objects
-		#note that 
+		# generic contains methods global to all instanciated objects
 		module Extentions
 			def add_properties(*args)
 				@default_properties ||= (super.default_properties rescue @default_properties = [])
@@ -37,6 +36,7 @@ module Generic
 			end
 
 		end	
+
 		def initialize(*args)
 			init_database
 			self.class.enforce_reference().each {|ref| self.add_reference ref, nil , :add_then_reference => true }
@@ -44,8 +44,8 @@ module Generic
 			self.class.default_properties.each {|prop| self.add_property(prop) }
 			init(*args)
 		end
-		def init(*args)
-		end
+		def init(*args) ; end
+
 		def add_property(prop,value_hash = {})
 		# add_property: Added the property prop to the database 
 		#		Alias the internal varibles as defined by the property

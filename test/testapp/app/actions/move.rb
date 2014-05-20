@@ -27,9 +27,11 @@ class Move < Action
 		m.enqueue_self(stile.db_parent.db_parent.eventhandler,source['turn'] || 0)
 	end
 	def preform_pre_callback
-		self['actor','turn'].set  self['actor','turn'] + self.class['turn_cost'] ## NOTE: MASSIVE VOLATION OF BEST PRACTICES NEED TO FIX EVENTHANDLING OF ACTIONCANCEL
+		# FIXME: MASSIVE VOLATION OF BEST PRACTICES NEED TO FIX EVENTHANDLING OF ACTIONCANCEL
+		self['actor','turn'].set  self['actor','turn'] + self.class['turn_cost'] 
 		raise ActionCancel, :invalid if self['actor'].db_parent == self['on'].db_parent
 	end
+
 	def calculate
 		tile = self['target']
 		tile = tile.db_parent until tile.is_a? Tile

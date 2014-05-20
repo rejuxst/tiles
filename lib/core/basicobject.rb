@@ -12,6 +12,7 @@ class Tiles::BasicObject
 		::Tiles::Application::ObjectSpace.register_basicobject_class(base)
 		base.init_database
 	end
+
 	def self.new(*args)
 		::Tiles::Application::ObjectSpace.register_instance(super(*args))
 	end

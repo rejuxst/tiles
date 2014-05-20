@@ -2,13 +2,12 @@ class  Tiles::Launcher
 class << self
 ############################
 	public #############
+	attr_reader :game, :manager
 	def launch(game,opts = {},&blk)
 		self.debug_mode= (opts[:debug] == true)
 		load_debug_suite if debug_mode?
 		load_tiles_library opts
-		@game_string = game
-		@input_blk = blk
-		@opts = opts
+		@game_string, @input_blk, @opts = game, blk, opts
 		safe_level = opts[:safe_level] if opts[:safe_level].class <= Fixnum
 		#$SAFE = safe_level
 		Tiles::Launcher.setup
@@ -21,6 +20,7 @@ class << self
 			Ncurses.nl
 			Ncurses.endwin if /linux/ === RUBY_PLATFORM
 		end
+
 		if debug_mode?
 			enter_debug_mode 
 		else
@@ -29,9 +29,11 @@ class << self
 	ensure
 		#Thread.kill(@game_thread)
 	end
+
 	def run
 		@application.run
 	end
+
 	def load_tiles_library(opts = {})
 		case opts[:load_source]
 			when :gem then core_load_from_gem
@@ -40,33 +42,31 @@ class << self
 			else core_load_from_gem
 		end
 	end
+
 	def setup		
 		@configuration= Tiles::Application::Configuration.last_config || 
 				Tiles::Application::Configuration.use_default_configuration 
 		load_application_from @opts[:app_dir]
-		@input_blk = Proc.new {} if @input_blk.nil?
+		@input_blk ||= Proc.new {} 
 		game = ::Tiles::Application::ObjectSpace.lookup_class(@game_string.to_s.capitalize) 
 		#TODO: This is a HUGE security flaw fix it
 		raise "#{game} is not a Tiles::Game" unless game <= Game
 		@game = game.new
 		@application = Tiles::Application.new( 
-			:game => @game,
-			:valid_channels => ["Channel", "Ncurses::Channel"]) { |g,a| @input_blk.call(g,a) }
+					:game => @game,
+					:valid_channels => ["Channel", "Ncurses::Channel"]
+				) { |g,a| @input_blk.call(g,a) }
 		self.freeze
-
-
 	end
+
 	def debug_mode?
 		@debug_mode == true
 	end
-	def game
-		@game
-	end
-	def manager
-		@manager
-	end
+
 ############################
+
 	private
+
 	def debug_mode=(input)
 		(@debug_mode = input).freeze
 	end
@@ -84,31 +84,41 @@ class << self
 
 		end
 	end
+
 	def core_load_from_application(dir)
 	end
+
 	def core_load_from_gem
 	end
+
 	def core_load_from_source(dir)
 		$LOAD_PATH << File.absolute_path(dir)
 		core = File.join(File.absolute_path(dir),'core')
 		Dir.open(core) do |ent|
 			ent.entries.each do |f|
-			begin
-			gem_original_require File.expand_path File.join(ent.to_path,f.partition('.')[0])
-			rescue Exception => e
-			raise <<-EOF
-Failed to load file correctly #{File.join(ent.to_path,f.partition('.')[0])} : 
-=> #{e}
-#{e.backtrace.join("\n")} 
-			EOF
-			end unless File.directory?(File.join(core,f)) || !(f.match(/\.gitignore/).nil?) || !(f.match(/\.swp/).nil?)
+				unless File.directory?(	File.join(core,f)) || 
+							!(f.match(/\.gitignore/).nil?) || 
+							!(f.match(/\.swp/).nil?
+							)
+					begin
+						gem_original_require File.expand_path File.join(ent.to_path,f.partition('.')[0])
+					rescue Exception => e
+						raise <<-EOF
+							| Failed to load file correctly #{File.join(ent.to_path,f.partition('.')[0])} : 
+							| => #{e}
+							| #{e.backtrace.join("\n")} 
+						EOF
+					end 
+				end
 			end
 
 		end
 	end
+
 	def load_debug_suite
 		require 'pry'
 	end
+
 	def enter_debug_mode
 		if @game.nil?
 			puts "No application instance loaded into launcher (self)"
@@ -117,6 +127,7 @@ Failed to load file correctly #{File.join(ent.to_path,f.partition('.')[0])} :
 			@application.pry
 		end	
 	end
+
 	def game_loop(game_string)
 	end
 ############################

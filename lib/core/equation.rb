@@ -16,9 +16,11 @@ module MathEquation
 		def has_target?
 			!output.empty?
 		end
+
 		def target
 			output.target if !output.empty?
 		end
+
 		def target_value
 			target.value(@source) if !output.empty?
 		end

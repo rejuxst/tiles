@@ -1,9 +1,12 @@
 require 'pry'
 class Thing < ::Tiles::BasicObject
 	include Generic::Responsive
+
 	# hash of all applicable state information with the key being an element on the definition database
 	# and the value being either dynamically or statically defined
+	# FIXME: Rendering as an attr is terrible and contrary to the model
 	attr_reader :ASCII
+
 	add_initialize_loop do |args = {}|
 		@ASCII = '0'
 		@ASCII = args[:ASCII] if !args[:ASCII].nil?

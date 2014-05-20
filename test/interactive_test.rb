@@ -2,8 +2,6 @@ require 'pry'
 def require_from_source
 	$LOAD_PATH << File.absolute_path(File.join(File.dirname(__FILE__),'/../lib/'))
 	core = File.join(File.dirname(__FILE__),"..","lib")
-	#puts "$LOAD_PATH LIST:"
-	#puts $LOAD_PATH
 	Dir.open(core) do |ent|
 		ent.entries.each do |f|
 		unless File.directory?(File.join(core,f)) || !(f.match(/\.gitignore/).nil?) || !(f.match(/\.swp/).nil?)
@@ -14,6 +12,7 @@ def require_from_source
 rescue
 	binding.pry
 end
+
 begin
 	require_from_source
 	binding.pry

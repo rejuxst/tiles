@@ -27,10 +27,12 @@ module Ncurses
 	end
 
 end 
+
 class Ncurses::View < View
 	def initialize
 		setup
 	end
+
 	def setup
 		Ncurses.init_screen	
 		Ncurses.cbreak           # provide unbuffered input
@@ -42,11 +44,13 @@ class Ncurses::View < View
 			Ncurses.stdscr.keypad(true) 
 		end
 	end
+
 	def recieve_package package
 		case package
 			when Game then render(package)
 		end
 	end
+
 	def render game
 		render_mainwindow(game)
 		#	Ncurses.getmaxyx(lines,columns,1)
@@ -66,6 +70,7 @@ class Ncurses::View < View
 			end
 		end
 	end
+
 	def close
 		sleep(2.5)
 		Ncurses.close_screen
@@ -90,9 +95,9 @@ class Ncurses::Channel < Channel
 end
 
 if /darwin/ === RUBY_PLATFORM
-module Curses; end if !defined? Curses
-Curses::UI = Ncurses::UI
-Curses::Channel = Ncurses::Channel
-Curses::View = Ncurses::View
-Ncurses = Curses 
+	module Curses; end if !defined? Curses
+	Curses::UI = Ncurses::UI
+	Curses::Channel = Ncurses::Channel
+	Curses::View = Ncurses::View
+	Ncurses = Curses 
 end

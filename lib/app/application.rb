@@ -70,13 +70,17 @@ class Tiles::Application
 	def register_new_channel_class(string)
 		valid_channels[string.to_s.downcase] = true
 	end
+
 	private
+
 	def valid_channels
 		@valid_channels ||= {}
 	end
+
 	def freeze_channel_list
 		@valid_channels.freeze
 	end
+
 	def channel_instances
 		@channel_instances ||= {}
 	end
