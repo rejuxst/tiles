@@ -12,32 +12,32 @@ class Log
 # on a character by charater basis. All callback functions 
 # must take in a single charater parameter.
 
-	attr_accessor :in, :out
-	attr_accessor :listeners
-	def initialize
-		@line = '';
-		@listeners = [];
-	end
-	def print(line)
-		line.each_char {|c| callback(c)}
-		@line << line
-		callback
-	end
-	def getl
-		i = 0;
-		output = ''
-		@line.reverse.each_char do |c|
-			output << c
-			break if c == "\n" and !output.empty?
-		end
-	end
-	def add_listener(obj,method)
-		listeners << [obj,method]
-	end
-	def callback(c)
-		listeners.each do |l|
-			l[0].send(l[1],c)
-		end
-	end
-	
+  attr_accessor :in, :out
+  attr_accessor :listeners
+  def initialize
+  	@line = '';
+  	@listeners = [];
+  end
+  def print(line)
+  	line.each_char {|c| callback(c)}
+  	@line << line
+  	callback
+  end
+  def getl
+  	i = 0;
+  	output = ''
+  	@line.reverse.each_char do |c|
+  		output << c
+  		break if c == "\n" and !output.empty?
+  	end
+  end
+  def add_listener(obj,method)
+  	listeners << [obj,method]
+  end
+  def callback(c)
+  	listeners.each do |l|
+  		l[0].send(l[1],c)
+  	end
+  end
+  
 end

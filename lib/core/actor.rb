@@ -1,4 +1,4 @@
 class Actor < Thing
-	include Generic::Responsive
-	include Active
+  include Generic::Responsive
+  include Active
 end

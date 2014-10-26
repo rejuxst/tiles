@@ -1,4 +1,3 @@
-require 'pry'
 require 'polyglot'
 require 'treetop'
 
@@ -18,8 +17,8 @@ module Scriptable
 #  the Name_of_Script will be obfuscated to Name_of_File-Name_of_Script (as a result no script name can start or end with a dash(-)
 # Outside of a script Name_of_script.function can be used to modify the operational mode of the script. anything not inside a def end block
 #  wll be read as ruby code but limited to operation via or on the Script instance.
-	def self.read()
-	end
+  def self.read()
+  end
 # repond|to|with|as|because|_if|_and|perform|_do|_end|
 # close|start|_read|action|reponse|it|their|my|all|us|
 # we|is|a|many|owned|by|player|game|the|
@@ -32,51 +31,51 @@ module Scriptable
 # Word Context-
 # Owner Context - this is recursive up the ownership stack
 
-		def is_blockname_valid?(name)
-			name.to_s == 'begin'
-		end
-		def execute_element(name,params = nil,inputs = nil)
-		end
-		def add_blockname(name)
-		end
-	
-	class InternalScript < Treetop::Runtime::SyntaxNode
-		def list
-			entries.elements.collect {|e| e.ent }
-		end
-	end
+  	def is_blockname_valid?(name)
+  		name.to_s == 'begin'
+  	end
+  	def execute_element(name,params = nil,inputs = nil)
+  	end
+  	def add_blockname(name)
+  	end
+  
+  class InternalScript < Treetop::Runtime::SyntaxNode
+  	def list
+  		entries.elements.collect {|e| e.ent }
+  	end
+  end
 
-	class Element < Treetop::Runtime::SyntaxNode
-	end
+  class Element < Treetop::Runtime::SyntaxNode
+  end
 
-	class Block < Treetop::Runtime::SyntaxNode
-		def name
-			begin_element.name
-		end
-	end
+  class Block < Treetop::Runtime::SyntaxNode
+  	def name
+  		begin_element.name
+  	end
+  end
 
-	def self.block_names(name = nil)
-		return @block_names if name.nil?
-		@block_names ||= {}
-		@block_names[name]
-	end
-	def self.add_block_name(name)
-		@block_name ||= {}
-		@block_name[name] = true
-	end
-	def self.on_load_callback(name)
-	end
-	def import(package)
-	end
-	def self.finished_resolving_element(name)
-	end
+  def self.block_names(name = nil)
+  	return @block_names if name.nil?
+  	@block_names ||= {}
+  	@block_names[name]
+  end
+  def self.add_block_name(name)
+  	@block_name ||= {}
+  	@block_name[name] = true
+  end
+  def self.on_load_callback(name)
+  end
+  def import(package)
+  end
+  def self.finished_resolving_element(name)
+  end
 
 end
 
 require 'grammars/scriptable'
 class Script < ScriptableParser
-	def initialize(string)
-		super()
-		@script = parse string
-	end
+  def initialize(string)
+  	super()
+  	@script = parse string
+  end
 end

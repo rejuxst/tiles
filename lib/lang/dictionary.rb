@@ -6,27 +6,27 @@ class Language::Dictionary
 # API for file access.
 
 # Dictionary creation API is integrated into Generic (EDIT: Is this for sure?)
-	extend Database::Data
-	extend Database::Base
-	def self.add_word(word,wordclass) #TODO: Needs lots of improvements
-		add_to_db Definition.new(word,wordclass), word, :if_in_use => :overwrite
-	end
-	def self.[]=(key,value)
-		add_word(key,value)
-	end
-	class Definition
-		include Database::Data
-		def initialize(word,wordclass)
-			raise "Invalid Dictionay::Definition input" unless word.is_a? ::String and wordclass.is_a? ::String
-			init_data
-			@word = word
-			@wordclass = wordclass
-		end
-		def word
-			@word
-		end
-		def grammar
-			@wordclass
-		end
-	end
+  extend Database::Data
+  extend Database::Base
+  def self.add_word(word,wordclass) #TODO: Needs lots of improvements
+  	add_to_db Definition.new(word,wordclass), word, :if_in_use => :overwrite
+  end
+  def self.[]=(key,value)
+  	add_word(key,value)
+  end
+  class Definition
+  	include Database::Data
+  	def initialize(word,wordclass)
+  		raise "Invalid Dictionay::Definition input" unless word.is_a? ::String and wordclass.is_a? ::String
+  		init_data
+  		@word = word
+  		@wordclass = wordclass
+  	end
+  	def word
+  		@word
+  	end
+  	def grammar
+  		@wordclass
+  	end
+  end
 end
