@@ -1,4 +1,6 @@
+.gems
+.bundle
+stubs
 *\.gem
 *\.swp
-t
 /*~/
