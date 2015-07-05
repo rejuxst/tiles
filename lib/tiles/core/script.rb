@@ -38,7 +38,7 @@ module Scriptable
   	end
   	def add_blockname(name)
   	end
-  
+
   class InternalScript < Treetop::Runtime::SyntaxNode
   	def list
   		entries.elements.collect {|e| e.ent }
@@ -72,7 +72,7 @@ module Scriptable
 
 end
 
-require 'grammars/scriptable'
+require 'tiles/grammars/scriptable'
 class Script < ScriptableParser
   def initialize(string)
   	super()

@@ -1,4 +1,4 @@
-require 'lang/linguistics'
+require 'tiles/lang/linguistics'
 class Language
   def self.load_parser
   	Treetop.load File.join(File.dirname(__FILE__),"en/#{self.name.downcase}parser")
@@ -20,7 +20,7 @@ class Language
   	end
   	def self.[]=(key,value)
   		add_class(key,value)
-  	end	
+  	end
   end
 end
 class Language::Word < Treetop::Runtime::SyntaxNode
@@ -47,4 +47,3 @@ class Language::Word < Treetop::Runtime::SyntaxNode
   	text_value.strip
   end
 end
-require 'lang/dictionary'
