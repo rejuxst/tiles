@@ -9,6 +9,8 @@ Gem::Specification.new do |s|
 EOF
   s.add_dependency 'ncurses-ruby', '>= 1.2.1'
   s.add_dependency 'treetop', '>= 1.4.0'
+	s.add_development_dependency 'rspec'
+	s.add_development_dependency 'pry'
   s.executables << 'tiles'
   s.authors     = ["Rejuxst"]
   s.email       = "wer123hitech@gmail.com"
