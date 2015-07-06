@@ -14,7 +14,6 @@ require 'rexml/element'
 module Database
   extend Tiles::Configurable # Making Database Configurable
 
-
 	## Class Functions
   def self.read_db(xmlstring)
 		raise "not implemented"
@@ -41,7 +40,7 @@ module Database
 		@database_entry_types[:default] = blk
   end
 
-  def self.set_assign_key(&blk)
+  def self.set_assign_key &blk
 		@assign_key = blk
   end
 
@@ -50,39 +49,37 @@ module Database
   end
 
 	def self.is_database_entry_class? the_class
-		@database_entry_types.any?{ |key,val| key == the_class }
-  end
+		@database_entry_types.any? { |key, val| key == the_class }
+	end
 
   def self.[](the_class)
-  return @database_entry_types[the_class] ||@database_entry_types[:default] rescue nil
+		return @database_entry_types[the_class] || @database_entry_types[:default] rescue nil
   end
 #####################################
 	configuration_method :add_database_entry_class, :set_assign_key, :set_database_missing_entry_class
 
-	default_configuration_call(:set_database_missing_entry_class) do |ky|
-		temp = @db[ky]
-		temp.is_a?(Reference) ? temp.resolve : temp
+	default_configuration_call :set_database_missing_entry_class do |ky|
+		(temp = @db[ky]).is_a?(Reference) ? temp.resolve : temp
 	end
 
-	default_configuration_call(:add_database_entry_class,Class) do |ky|
-		 @db[ky].nil?() ? nil : @db[ky].resolve
+	default_configuration_call :add_database_entry_class, Class  do |ky|
+		 @db[ky].nil? ? nil : @db[ky].resolve
 	end
 
-	default_configuration_call(:add_database_entry_class,Fixnum) { |ky| @db[ky] }
-
-	default_configuration_call(:add_database_entry_class,String) do |ky|
-		temp = @db[ky]
-		(temp.is_a?(Reference)) ? temp.resolve : temp
+	default_configuration_call :add_database_entry_class, Fixnum do |ky|
+		@db[ky]
 	end
 
-	default_configuration_call(:add_database_entry_class,Symbol) do |ky|
-		temp = @db[ky]
-		(temp.is_a?(Reference)) ? temp.resolve : temp
+	default_configuration_call :add_database_entry_class, String do |ky|
+		(temp = @db[ky]).is_a?(Reference) ? temp.resolve : temp
 	end
 
-	default_configuration_call(:set_assign_key) do
-		@max_key = 0 if @max_key.nil?
-		@max_key = @max_key + 1
+	default_configuration_call :add_database_entry_class, Symbol do |ky|
+		(temp = @db[ky]).is_a?(Reference) ? temp.resolve : temp
+	end
+
+	default_configuration_call :set_assign_key do
+		@max_key = (@max_key || 0) + 1
 	end
 end
 
