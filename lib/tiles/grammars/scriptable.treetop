@@ -1,0 +1,33 @@
+grammar Scriptable
+	rule script
+		 entries:( [\s]* ent:(script_block / script_element) [\s]* )* [\s]* <Scriptable::InternalScript>
+	end
+	rule script_block
+		 begin_element ( script_block / (!end_element  .))* end_element
+			&{ |en| true } <Scriptable::Block>
+	end
+######## Script Element ###########
+	rule begin_element
+		'\\' name:('begin' / valid_block_name)  element_parameters?   element_inputs?
+	end
+	rule end_element
+		'\\' 'end'	element_parameters?
+	end
+	rule script_element
+		'\\'  name:element_name element_parameters? element_inputs? 
+			&{ |en| execute_element(*en[1..3]); true} 
+				<Scriptable::Element> 
+	end
+	rule valid_block_name
+		[\w]+ &{ |en| is_blockname_valid?(en[0].text_value)} 
+	end
+	rule element_name
+		[\w]+ 
+	end
+	rule element_parameters
+		'{' [\w\s]* '}'
+	end
+	rule element_inputs
+		'[' [\w\s]* ']' 
+	end
+end

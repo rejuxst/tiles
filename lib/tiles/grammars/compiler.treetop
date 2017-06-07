@@ -1,0 +1,57 @@
+grammar LanguageCompiler
+	include Linguistics
+	rule dict
+		([\s]* dl:dict_line [\s]*)* {
+			def entries
+				elements.collect { |e| e.dl unless e.empty? or e.dl.is_comment? }.delete_if { |e| e == nil }
+			end
+		}
+	end
+
+	rule dict_line
+		dict_rule / global_rule / comment {
+			def is_comment?
+				true
+			end
+		}
+	end
+
+	rule comment
+		[\s]* comment:'%'  (!"\n"  . )*  {
+			def is_comment?
+				true
+			end
+		}
+	end
+
+	rule dict_rule
+		nm:entry_class nms:(' '+ nm:entry_class   )* ' '* ':' ' '* equation:equation  [\s]* ';'+ 	<Entry>
+	end
+
+	rule global_rule
+		nm:variable ' '* ':' ' '* regex  [\s]* ';' 	 					<Entry>
+	end
+	rule entry_class
+		string / alias / class / variable / instance
+	end
+	rule variable
+		type:'$' nm:[A-Z_]+				<EntryName>
+	end
+	rule class
+		type:'@' nm:[a-z]+ sub_class:('#' [a-z]+)*	<EntryName>
+	end
+	rule instance
+		type:''	nm:[a-zA-Z_]* cltype:('.' [a-z]+)?	<EntryName>
+	end
+
+	rule string
+		'"' nm:( '\"' / (!'"' .) )* '"'			<EntryName>
+	end
+	rule alias
+		'<' (!('>' / '<') .)* '>'				<EntryName>
+	end
+
+	rule regex
+		'/' ( '\/' / (!'/' .) )* '/'		<Regex>
+	end
+end

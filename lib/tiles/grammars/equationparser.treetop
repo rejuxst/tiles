@@ -1,0 +1,30 @@
+grammar MathEquation
+	rule equation
+		'' output:(target:variable '=' )? '' additive <Equation>
+	end
+	rule additive
+		 start:multitive ' '* other_terms:( ' '*  operator:[+-]  ' '* term:multitive )*  <Operation> 
+	end
+	rule multitive
+		 start:primary   ' '* other_terms:( ' '*  operator:[*/%]  ' '* term:primary )*   <Operation>
+	end
+	rule primary
+		' '* '(' ' '* additive ' '* ')' ' '* {
+			def value(src = nil)
+				additive.value(src)
+			end
+			def source
+				parent.source
+			end
+		}
+		/ literal / variable
+	end
+	rule literal
+		' '* '-'? [0-9]+ ('.' [0-9]+)? ' '* <Literal>
+	end
+	#TODO: Fix this to allow for 1 letter long variables/references
+	rule variable
+		' '* [a-zA-Z] [a-z#A-Z]+ default:('?' to:literal)? ' '* <Variable> 
+	end
+
+end

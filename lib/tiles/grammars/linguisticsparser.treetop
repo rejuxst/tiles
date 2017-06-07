@@ -1,0 +1,29 @@
+grammar Linguistics
+	rule equation
+		'' equation:or_rule <WordClass>
+	end
+	rule or_rule
+		start:and_rule other_terms:( [\s]+ operator:'or'  [\s]+ term:and_rule )* <DisjunctNode>
+	end
+	rule and_rule
+		start:primary  other_terms:( [\s]* operator:'&' [\s]* term:primary    )* <OperandsNode> 
+	end
+	rule primary
+		optional / paren / cost / alias_node / connector
+	end
+	rule optional
+		[\s]* '{' [\s]* or_rule [\s]* '}'  <OptionalNode>
+	end
+	rule paren
+		[\s]* '(' [\s]* content:or_rule? [\s]* ')'  <ParenNode>
+	end
+	rule cost
+		[\s]* '[' [\s]* content:or_rule? [\s]* ']'  <CostNode>
+	end
+	rule alias_node
+		'<' nm:[A-Za-z_]+ '>'				<AliasNode>
+	end
+	rule connector
+		multiple:'@'? type:[A-Z]+  arb:'*'* misc:([a-z] / '*')* direction:[+-] <Connector>
+	end
+end

@@ -11,3 +11,6 @@ Intended Features:
  - Extensive base code for quickly scaffolding games based on genre
  - Linguisitics Interpreter to facilitate translating between code and development
 
+TODO:
+ - Switch to using ActiveModel instead of rolling my own
+ - Delegate the hard data to a database so the half-assed MVC model can be less half-assed
